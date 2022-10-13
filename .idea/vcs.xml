@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/unleashed-firmware" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/unleashed-firmware/assets/protobuf" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/unleashed-firmware/lib/FreeRTOS-Kernel" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/unleashed-firmware/lib/FreeRTOS-Kernel/portable/ThirdParty/Community-Supported-Ports" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/unleashed-firmware/lib/FreeRTOS-Kernel/portable/ThirdParty/Partner-Supported-Ports" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/unleashed-firmware/lib/STM32CubeWB" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/unleashed-firmware/lib/cxxheaderparser" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/unleashed-firmware/lib/libusb_stm32" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/unleashed-firmware/lib/littlefs" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/unleashed-firmware/lib/mbedtls" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/unleashed-firmware/lib/microtar" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/unleashed-firmware/lib/mlib" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/unleashed-firmware/lib/nanopb" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/unleashed-firmware/lib/scons" vcs="Git" />
+  </component>
+</project>

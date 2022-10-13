@@ -5,5 +5,5 @@ App(
     entry_point="zero_jvm_entrypoint",
     cdefines=["ZERO_JVM"],
     requires=["gui"],
-    stack_size=1 * 1024,  # TODO: increase
+    stack_size=20 * 1024,  # TODO: increase
 )
