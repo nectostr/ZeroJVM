@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -eu;
+
+# private variables
+SCONS_DEFAULT_FLAGS="-Q --warn=target-not-built";
+
+# public variables
+FBT_NO_SYNC="${FBT_NO_SYNC:-""}";
+if [ -z "$FBT_NO_SYNC" ]; then
+    git submodule update --init --recursive;
+fi
+
+python3 "./lib/scons/scripts/scons.py" $SCONS_DEFAULT_FLAGS "$@"

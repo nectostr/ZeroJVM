@@ -1,0 +1,9 @@
+App(
+    appid="zero_jvm",
+    name="ZeroJVM",
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="zero_jvm_entrypoint",
+    cdefines=["ZERO_JVM"],
+    requires=["gui"],
+    stack_size=1 * 1024,  # TODO: increase
+)
