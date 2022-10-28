@@ -3,7 +3,7 @@ APPPATH =	unleashed-firmware/applications_user/zero_jvm
 CPPFLAGS = -I unleashed-firmware/furi -I unleashed-firmware/applications/services
 
 # Target for a building on a x86 architecture for debug
-all:
+x86:
 	$(CC) $(CFLAGS) src/zero_jvm_default_entry.c -o zero_jvm_default
 
 
