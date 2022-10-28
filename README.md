@@ -3,8 +3,9 @@ This is a CS263 course project repository with implementation of simple JVM desi
 
 ## Preparation
 1. `git submodule update --init --recursive`
-2. `make clean`
-3. `make all`
+2. `cd unleashed-firmware && .fbt && cd ..`
+3. `make clean`
+4. `make all`
 
 ## TODO list:
 1. Make sure code compiles on target VM's and devices
