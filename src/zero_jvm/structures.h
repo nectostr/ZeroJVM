@@ -2,21 +2,30 @@
 #ifndef STRUCTURES_H
 #define STRUCTURES_H
 
+#include <string.h>
+
 #define STATICS_TABLE_SIZE 64
 #define MAX_NAME_SIZE      32
 #define MAX_TYPE_SIZE       4
 #define STATICS_MAP_SIZE   64
 #define WORD_SIZE           4
 
+#define SM  0
+#define SF  1
+#define Map 2
+#define Ref 3
+#define o   4
+
+
 // 1byte array, so +offset would work nicely
-extern char statics_table[STATICS_TABLE_SIZE];
+extern char * statics_table;
 
 // alternative: offset always /4
 // uint32_t statics_table[STATICS_TABLE_SIZE/4];
 
 struct MapEntry{
     char name[MAX_NAME_SIZE];
-    char type[MAX_TYPE_SIZE];
+    unsigned char type;
     unsigned int offset;
 };
 
