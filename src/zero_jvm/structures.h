@@ -37,4 +37,6 @@ void debug_random_init();
 void debug_print_statics_map();
 void debug_print_statics_table();
 
+void add_statics_entry(char* name, char* type);
+
 #endif // STRUCTURES_H
