@@ -6,6 +6,7 @@
 #define MAX_NAME_SIZE      32
 #define MAX_TYPE_SIZE       4
 #define STATICS_MAP_SIZE   64
+#define WORD_SIZE           4
 
 // 1byte array, so +offset would work nicely
 extern char statics_table[STATICS_TABLE_SIZE];
@@ -24,5 +25,9 @@ typedef struct MapEntry MapEntry;
 
 
 extern MapEntry statics_map[STATICS_MAP_SIZE];
+
+
+void debug_print_statics_map();
+void debug_print_statics_table();
 
 #endif // STRUCTURES_H
