@@ -1,6 +1,7 @@
 #include <stdint.h>
 # include "zero_jvm/structures.h"
+#include "zero_jvm/loader.c"
 
 int32_t main(int argc, char** argv) {
-    return 1;
+    return read_class();
 }

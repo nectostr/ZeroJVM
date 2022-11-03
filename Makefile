@@ -1,3 +1,6 @@
+CC = gcc
+CFLAGS = -g
+
 FBT	=	../fbt
 APPPATH =	unleashed-firmware/applications_user/zero_jvm
 CPPFLAGS = -I unleashed-firmware/furi -I unleashed-firmware/applications/services
