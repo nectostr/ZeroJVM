@@ -1,3 +1,6 @@
 .idea
 .idea/*
 zero_jvm_default
+entrypoint.class
+tests
+tests/*
