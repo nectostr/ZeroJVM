@@ -4,10 +4,13 @@ CFLAGS = -g
 FBT	=	../fbt
 APPPATH =	unleashed-firmware/applications_user/zero_jvm
 CPPFLAGS = -I unleashed-firmware/furi -I unleashed-firmware/applications/services
+SRC = src/zero_jvm_default_entry.c src/zero_jvm/loader.c src/zero_jvm/structures.c
+
 
 # Target for a building on a x86 architecture for debug
-x86:
-	$(CC) $(CFLAGS) src/zero_jvm_default_entry.c -o zero_jvm_default
+
+x86: $(SRC)
+	$(CC) -o zero_jvm $^ $(CFLAGS) -I /src/zero_jvm
 
 
 # Target for building on a flipper
@@ -18,4 +21,4 @@ flipper:
 	cd unleashed-firmware && $(FBT) fap_zero_jvm
 
 clean:
-	rm -rf $(APPPATH)
+	rm -rf $(APPPATH) zero_jvm

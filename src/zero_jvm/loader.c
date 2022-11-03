@@ -1,8 +1,5 @@
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#define FILENAME "entrypoint.class"
+#include "loader.h"
 
 unsigned char filebytebuffer[8];
 FILE *filepointer;
@@ -34,18 +31,6 @@ unsigned long read_uint64() {
            (unsigned long) filebytebuffer[4] << 24 | (unsigned long) filebytebuffer[5] << 16 |
            (unsigned long) filebytebuffer[6] << 8 | (unsigned long) filebytebuffer[7];
 }
-
-union ConstantPoolType {
-    unsigned short ushort;
-    unsigned int uint;
-    unsigned long ulong;
-};
-
-struct ConstantPoolEntry {
-    unsigned char tag;
-    union ConstantPoolType data;
-    unsigned char *addon;
-};
 
 struct ConstantPoolEntry read_constant_pool_entry() {
     struct ConstantPoolEntry entry;
@@ -96,32 +81,18 @@ struct ConstantPoolEntry read_constant_pool_entry() {
     return entry;
 }
 
-struct AttributeInfo {
-    unsigned short attribute_name_index;
-    unsigned int attribute_length;
-    unsigned char *info;
-};
-
-struct AttributeInfo read_attribute_info() {
-    struct AttributeInfo attribute;
-    attribute.attribute_name_index = read_uint16();
-    attribute.attribute_length = read_uint32();
-    attribute.info = calloc(attribute.attribute_length, 1);
-    for (unsigned int i = 0; i < attribute.attribute_length; i++) {
-        attribute.info[i] = read_uint8();
+struct MethodInfo read_method_info() {
+    struct MethodInfo info;
+    info.access_flags = read_uint16();
+    info.name_index = read_uint16();
+    info.descriptor_index = read_uint16();
+    info.attributes_count = read_uint16();
+    info.attributes = calloc(info.attributes_count, sizeof(struct AttributeInfo));
+    for (unsigned short i = 0; i < info.attributes_count; i++) {
+        info.attributes[i] = read_attribute_info();
     }
-    return attribute;
+    return info;
 }
-
-
-struct FieldInfo {
-    unsigned short access_flags;
-    unsigned short name_index;
-    unsigned short descriptor_index;
-    unsigned short attributes_count;
-    struct AttributeInfo *attributes;
-};
-
 
 struct FieldInfo read_field_info() {
     struct FieldInfo info;
@@ -136,28 +107,16 @@ struct FieldInfo read_field_info() {
     return info;
 }
 
-struct MethodInfo {
-    unsigned short access_flags;
-    unsigned short name_index;
-    unsigned short descriptor_index;
-    unsigned short attributes_count;
-    struct AttributeInfo *attributes;
-};
-
-
-struct MethodInfo read_method_info() {
-    struct MethodInfo info;
-    info.access_flags = read_uint16();
-    info.name_index = read_uint16();
-    info.descriptor_index = read_uint16();
-    info.attributes_count = read_uint16();
-    info.attributes = calloc(info.attributes_count, sizeof(struct AttributeInfo));
-    for (unsigned short i = 0; i < info.attributes_count; i++) {
-        info.attributes[i] = read_attribute_info();
+struct AttributeInfo read_attribute_info() {
+    struct AttributeInfo attribute;
+    attribute.attribute_name_index = read_uint16();
+    attribute.attribute_length = read_uint32();
+    attribute.info = calloc(attribute.attribute_length, 1);
+    for (unsigned int i = 0; i < attribute.attribute_length; i++) {
+        attribute.info[i] = read_uint8();
     }
-    return info;
+    return attribute;
 }
-
 
 int read_class() {
     loadfile();
@@ -203,6 +162,6 @@ int read_class() {
     fseek(filepointer, 0L, SEEK_END);
     long bytes_total = ftell(filepointer);
 
-    printf("Bytes read: %ld, bytes total: %ld ", bytes_read, bytes_total);
+    printf("Bytes read: %ld, bytes total: %ld \n", bytes_read, bytes_total);
     return 0;
 }
