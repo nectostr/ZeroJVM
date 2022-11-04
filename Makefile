@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g
+CFLAGS = -g -Wall
 
 FBT	=	../fbt
 APPPATH =	unleashed-firmware/applications_user/zero_jvm
