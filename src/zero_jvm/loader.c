@@ -198,6 +198,7 @@ void add_instance_entry(JavaClass *class, MFInfo *info) {
     class->class_map[class->max_class_map_index].access_flags = info->access_flags;
     class->class_map[class->max_class_map_index].attributes_count = info->attributes_count;
     class->class_map[class->max_class_map_index].attributes = info->attributes;
+    class->class_map[class->max_class_map_index].descriptor_index = info->descriptor_index;
 
 
     switch (*type) { //type
@@ -208,11 +209,11 @@ void add_instance_entry(JavaClass *class, MFInfo *info) {
         case 'C':
         case 'I': //int, float
         {
-            class->class_map[class->max_class_map_index].offset = class->max_class_field_offset;
-            class->max_class_field_offset += 4;
-
             unsigned int *tmp4 = (unsigned int *) object_entry;
             *tmp4 = 0;
+
+            class->class_map[class->max_class_map_index].offset = class->max_class_field_offset;
+            class->max_class_field_offset += 4;
 
             class->class_map[class->max_class_map_index].type = MAP_TYPE_SF;
             break;
@@ -220,11 +221,11 @@ void add_instance_entry(JavaClass *class, MFInfo *info) {
         case 'J':
         case 'D': //long double
         {
-            class->class_map[class->max_class_map_index].offset = class->max_class_field_offset;
-            class->max_class_field_offset += 8;
-
             unsigned long *tmp8 = (unsigned long *) object_entry;
             *tmp8 = 0;
+
+            class->class_map[class->max_class_map_index].offset = class->max_class_field_offset;
+            class->max_class_field_offset += 8;
 
             class->class_map[class->max_class_map_index].type = MAP_TYPE_SF;
             break;
@@ -282,14 +283,9 @@ JavaClass read_class(char *classname) {
     class.field_count = read_uint16();
 
     class.class_map = calloc(MAX_THEORETICAL_CLASS_MAP_SIZE, sizeof(MapEntry));
+    
     class.object_instance_template = calloc(class.field_count * 2, WORD_SIZE); // see any other * 2 explanation
-    unsigned int * header = (unsigned int *) class.object_instance_template;
-    memccpy(header, &class.class_rep, 1, WORD_SIZE);
-    header++;
-    unsigned int tmp = 264;
-    memccpy(header, &tmp, 1, WORD_SIZE);
-    //*header = the rest of header;
-
+    
     for (unsigned short i = 0; i < class.field_count; ++i) {
         MFInfo current_field = read_meth_field_info();
         char *name = get_constant_pool_entry_name(&class, current_field.name_index);
@@ -303,7 +299,16 @@ JavaClass read_class(char *classname) {
     }
 
     class.method_count = read_uint16();
+
     class.class_rep = calloc(class.method_count, WORD_SIZE);
+    // Because we copy class red address, that callocs only here. 
+    unsigned int * header = (unsigned int *) class.object_instance_template;
+    memcpy(header, &class.class_rep, WORD_SIZE);
+    header++;
+    unsigned int tmp = 100;
+    memcpy(header, &tmp, WORD_SIZE);
+    //*header = the rest of header;
+
     for (unsigned short i = 0; i < class.method_count; ++i) {
         MFInfo current_method = read_meth_field_info();
         char *name = get_constant_pool_entry_name(&class, current_method.name_index);
@@ -324,7 +329,7 @@ JavaClass read_class(char *classname) {
     runtime.statics_map[runtime.max_statics_map_index].attributes_count = 0;
     runtime.statics_map[runtime.max_statics_map_index].attributes = NULL;
     runtime.statics_map[runtime.max_statics_map_index].offset = runtime.max_statics_table_offset;    
-    memccpy(runtime.statics_table + runtime.max_statics_table_offset, &class.class_rep, 1, WORD_SIZE);
+    memcpy(runtime.statics_table + runtime.max_statics_table_offset, &class.class_rep, WORD_SIZE);
     runtime.max_statics_table_offset += 4;
     runtime.statics_map[runtime.max_statics_map_index].type = MAP_TYPE_REP;
     runtime.max_statics_map_index++;
@@ -335,7 +340,7 @@ JavaClass read_class(char *classname) {
     runtime.statics_map[runtime.max_statics_map_index].attributes_count = 0;
     runtime.statics_map[runtime.max_statics_map_index].attributes = NULL;
     runtime.statics_map[runtime.max_statics_map_index].offset = runtime.max_statics_table_offset;
-    memccpy(runtime.statics_table + runtime.max_statics_table_offset, &class.class_map, 1, WORD_SIZE);
+    memcpy(runtime.statics_table + runtime.max_statics_table_offset, &class.class_map, WORD_SIZE);
     runtime.max_statics_table_offset += 4;
     runtime.statics_map[runtime.max_statics_map_index].type = MAP_TYPE_MAP;
     runtime.max_statics_map_index++;
@@ -366,9 +371,15 @@ JavaClass read_class(char *classname) {
 // DEBUG FUNCTIONS
 void debug_print_statics_table() {
     printf("STATICS_TABLE\n");
+    unsigned int *ptr = malloc(4);
     for (int i = 0; i < runtime.max_statics_table_offset; i = i + 4) {
-        printf("%d\n", runtime.statics_table[i]);
+        
+        memcpy(ptr, &(runtime.statics_table[i]), 4);
+        printf("%p\t", *ptr);
+        
+        printf("%d\n", *ptr);
     }
+    free(ptr);
     printf("\n");
 }
 
@@ -383,9 +394,14 @@ void debug_print_statics_map() {
 // DEBUG FUNCTIONS
 void debug_print_rep(JavaClass *class) {
     printf("%s REP\n", get_constant_pool_entry_name(class, class->this));
+    unsigned int *ptr = malloc(4);
     for (int i = 0; i < class->max_class_rep_offset; i = i + 4) {
-        printf("%d\n", class->class_rep[i]);
+        
+        memcpy(ptr, &class->class_rep[i], 4);
+        printf("%p\n", *ptr);
+       
     }
+    free(ptr);
     printf("\n");
 }
 
@@ -401,8 +417,14 @@ void debug_print_map(JavaClass *class) {
 // DEBUG FUNCTIONS
 void debug_print_obj_tmpl(JavaClass *class) {
     printf("%s obj template\n", get_constant_pool_entry_name(class, class->this));
-    for (int i = 0; i < class->max_class_field_offset; i = i + 4) {
-        printf("%d\n", class->object_instance_template[i]);
+    unsigned int *ptr = malloc(4);
+    memcpy(ptr, &class->object_instance_template[0], 4);
+    printf("%p\n", *ptr);
+   
+    for (int i = 1; i < class->max_class_field_offset; i = i + 4) {
+        memcpy(ptr, &class->object_instance_template[i], 4);
+        printf("%d\n", *ptr);
     }
+     free(ptr);
     printf("\n");
 }

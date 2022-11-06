@@ -15,7 +15,8 @@ typedef struct {
     unsigned int offset;
     unsigned short access_flags;
     unsigned short attributes_count;
-    AttributeInfo *attributes;
+    AttributeInfo *attributes;    
+    unsigned short descriptor_index;
 } MapEntry; // static map entry
 
 typedef struct {

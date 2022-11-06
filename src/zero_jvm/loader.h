@@ -38,7 +38,9 @@ typedef struct {
     unsigned short method_count;
     unsigned short attribute_count;
     AttributeInfo *attributes;
+    
 
+    // They also are in statics table, btw
     MapEntry *class_map;
     unsigned int max_class_map_index;;
     char *class_rep;
