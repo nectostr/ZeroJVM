@@ -1,6 +1,8 @@
 .idea
 .idea/*
 zero_jvm_default
-entrypoint.class
+*.class
+*.java
 tests
 tests/*
+.vscode

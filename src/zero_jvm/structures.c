@@ -94,19 +94,20 @@ void add_statics_entry(MFInfo * info) {
         current_statics_table_offset += 4;
     }
 
-    // //TODO: learn how to know the type
-    // switch (1) { //type
-    //     case 1: //int, float  
-    //         unsigned int * tmp4 = (unsigned int *) entry;
-    //         *tmp4 = 0;
-    //         statics_map[current_statics_map_index].type = 1;
-    //     case 2: //long double
-    //         unsigned long * tmp8 = (unsigned long *) entry;
-    //         *tmp8 = 0;
-    //         statics_map[current_statics_map_index].type = 2;
-    //     default: //method, ?
-    //         *entry = 0;// default or compiled add
-    //         statics_map[current_statics_map_index].type = 0;
-    // }
+    
+    switch (1) { //type
+        case 1: //int, float  
+            unsigned int * tmp4 = (unsigned int *) entry;
+            *tmp4 = 0;
+            statics_map[current_statics_map_index].type = 1;
+        case 2: //long double
+            unsigned long * tmp8 = (unsigned long *) entry;
+            *tmp8 = 0;
+            statics_map[current_statics_map_index].type = 2;
+        case 3: //SIM
+        default: //method, ?
+            *entry = 0;// default or compiled add
+            statics_map[current_statics_map_index].type = 0;
+    }
     current_statics_map_index++;
 }
