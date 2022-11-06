@@ -308,15 +308,14 @@ JavaClass read_class(char *classname) {
         MFInfo current_method = read_meth_field_info();
         char *name = get_constant_pool_entry_name(&class, current_method.name_index);
         char *type = get_constant_pool_entry_name(&class, current_method.descriptor_index);
-        if ((strcmp(name, "<clinit>") != 0) &&
-            ((current_method.access_flags & ACC_STATIC) ||
-             (strcmp(name, "<init>") == 0))) {
-            add_statics_entry(&class, &current_method);
-        } else if (strcmp(name, "<clinit>") != 0) {
-            add_instance_entry(&class, &current_method);
-        } else {
+        if (strcmp(name, "<clinit>") == 0)        {
             //TODO: "Just call me, I am always last"
-        }
+        } else if ((current_method.access_flags & ACC_STATIC) ||
+             (strcmp(name, "<init>") == 0)) {
+            add_statics_entry(&class, &current_method);
+        } else {
+            add_instance_entry(&class, &current_method);
+        } 
     }
 
     // add map and rep to statics
