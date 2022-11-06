@@ -106,6 +106,15 @@ struct AttributeInfo read_attribute_info() {
     return attribute;
 }
 
+char * get_constant_pool_entry_name(int index) {
+    struct  ConstantPoolEntry * entry = &constant_table[index];
+    while (entry->tag != 1) {
+        entry = &constant_table[entry->data.ushort];
+    }
+    return (char *) entry->addon;
+    
+}
+
 int read_class() {
     loadfile();
     unsigned int cafebabe = read_uint32();
@@ -147,7 +156,11 @@ int read_class() {
     MFInfo *method_table = calloc(fields_count, sizeof(MFInfo));
     for (unsigned short i = 0; i < methods_count; ++i) {
         method_table[i] = read_meth_field_info();
-        if (method_table[i].access_flags & ACC_STATIC) {
+        char * name = get_constant_pool_entry_name(method_table[i].name_index);
+    
+        if ((strcmp(name,"<clinit>") != 0) &&
+            ((method_table[i].access_flags & ACC_STATIC) ||
+            (strcmp(name,"<init>") == 0))  )  {
             add_statics_entry(&method_table[i]);
         }
     }

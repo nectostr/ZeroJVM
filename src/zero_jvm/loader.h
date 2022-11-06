@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define FILENAME "entrypoint.class"
 
@@ -59,6 +60,7 @@ struct ConstantPoolEntry read_constant_pool_entry(unsigned char tag);
 struct MethodInfo read_method_info();
 struct FieldInfo read_field_info();
 struct AttributeInfo read_attribute_info();
+char * get_constant_pool_entry_name(int index);
 
 int read_class();
 

@@ -38,14 +38,7 @@ void debug_print_statics_map() {
     printf("\n");
 }
 
-char * get_constant_pool_entry_name(int index) {
-    struct  ConstantPoolEntry * entry = &constant_table[index];
-    while (entry->tag != 1) {
-        entry = &constant_table[entry->data.ushort];
-    }
-    return (char *) entry->addon;
-    
-}
+
 
 // char * get_constant_pool_entry_name(int index) {
 //     struct  ConstantPoolEntry * entry = &constant_table[index];
@@ -110,9 +103,14 @@ void add_statics_entry(MFInfo * info) {
             *tmp8 = 0;
             statics_map[current_statics_map_index].type = SF;
             break;
-        case '(': //method,          
+        case '(': //method, 
+         
             *entry = 'C';// TODO: default compiler/interpreter link
-            statics_map[current_statics_map_index].type = SM;
+            if (strcmp(statics_map[current_statics_map_index].name, "<init>") == 0) {
+                statics_map[current_statics_map_index].type = SIM;
+            } else {
+                statics_map[current_statics_map_index].type = SM;
+            }
             break;
         //case ?: //Map, Ref, SIM
     }
