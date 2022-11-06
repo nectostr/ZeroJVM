@@ -1,5 +1,9 @@
 #pragma once
 
+#include <stdlib.h>
+#include "constants.h"
+
+
 typedef struct {
     char *name;
     unsigned char type;
@@ -18,3 +22,4 @@ extern Runtime runtime;
 
 
 void init_runtime();
+

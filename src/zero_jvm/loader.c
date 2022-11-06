@@ -105,7 +105,7 @@ AttributeInfo read_attribute_info() {
     return attribute;
 }
 
-char *get_constant_pool_entry_name(JavaClass * class, int index) {
+char *get_constant_pool_entry_name(JavaClass *class, int index) {
     ConstantPoolEntry *entry = &class->constant_pool[index];
     while (entry->tag != 1) {
         entry = &class->constant_pool[entry->data.ushort];
@@ -127,7 +127,7 @@ char *get_constant_pool_entry_name(JavaClass * class, int index) {
 [L = any non-primitives(Object)
 */
 
-void add_statics_entry(char * name, char * type) {
+void add_statics_entry(char *name, char *type) {
     /*
         * 1. Copy name as a string to statics_map
         * 2. Find out type and chage offset accordingly
@@ -181,12 +181,12 @@ void add_statics_entry(char * name, char * type) {
     runtime.max_statics_map_index++;
 }
 
-void add_instance_entry(JavaClass * class, MFInfo *info) {
+void add_instance_entry(JavaClass *class, MFInfo *info) {
 
-    char * name = get_constant_pool_entry_name(class, info->name_index);
-    char * type = get_constant_pool_entry_name(class, info->descriptor_index); 
+    char *name = get_constant_pool_entry_name(class, info->name_index);
+    char *type = get_constant_pool_entry_name(class, info->descriptor_index);
     char *entry = class->class_rep + class->max_class_rep_offset;
-    
+
     class->class_map[class->max_class_map_index].name = name;
 
     switch (*type) { //type
@@ -218,7 +218,7 @@ void add_instance_entry(JavaClass * class, MFInfo *info) {
         }
         case '(': //method,
             class->class_map[class->max_class_map_index].offset = class->max_class_rep_offset;
-            class->max_class_rep_offset +=4;
+            class->max_class_rep_offset += 4;
             *entry = 'C';// TODO: default compiler/interpreter link
             if (strcmp(name, "<init>") == 0) {
                 class->class_map[class->max_class_map_index].type = SIM;
@@ -234,8 +234,8 @@ void add_instance_entry(JavaClass * class, MFInfo *info) {
 JavaClass read_class(char *classname) {
     JavaClass class;
 
-    
-    class.max_class_field_offset = WORD_SIZE*2; //  because 2 words taken for info
+
+    class.max_class_field_offset = WORD_SIZE * 2; //  because 2 words taken for info
     class.max_class_rep_offset = 0;
     class.max_class_map_index = 0;
 
@@ -255,7 +255,7 @@ JavaClass read_class(char *classname) {
         }
     }
 
-    
+
     class.access_flags = read_uint16();
     class.this = read_uint16();
     class.super = read_uint16();
@@ -268,26 +268,25 @@ JavaClass read_class(char *classname) {
 
     class.field_count = read_uint16();
 
-    class.class_map = calloc(MAX_THEORETICAL_CLASS_MAP_SIZE, sizeof(MapEntry)); // *2 because we have no idea if they would be long/double or normal guys
+    class.class_map = calloc(MAX_THEORETICAL_CLASS_MAP_SIZE, sizeof(MapEntry));
     for (unsigned short i = 0; i < class.field_count; ++i) {
         MFInfo current_field = read_meth_field_info();
-        char * name = get_constant_pool_entry_name(&class, current_field.name_index);
-        char * type = get_constant_pool_entry_name(&class, current_field.descriptor_index);
+        char *name = get_constant_pool_entry_name(&class, current_field.name_index);
+        char *type = get_constant_pool_entry_name(&class, current_field.descriptor_index);
         if (current_field.access_flags & ACC_STATIC) {
             add_statics_entry(name, type);
         } else {
             // Technically, we should set the class rep before first this, but this will never use rep, so it's ok
             add_instance_entry(&class, &current_field);
         }
-
     }
 
     class.method_count = read_uint16();
     class.class_rep = calloc(class.method_count, WORD_SIZE);
     for (unsigned short i = 0; i < class.method_count; ++i) {
         MFInfo current_method = read_meth_field_info();
-        char * name = get_constant_pool_entry_name(&class, current_method.name_index);
-        char * type = get_constant_pool_entry_name(&class, current_method.descriptor_index);
+        char *name = get_constant_pool_entry_name(&class, current_method.name_index);
+        char *type = get_constant_pool_entry_name(&class, current_method.descriptor_index);
         if ((strcmp(name, "<clinit>") != 0) &&
             ((current_method.access_flags & ACC_STATIC) ||
              (strcmp(name, "<init>") == 0))) {
@@ -299,9 +298,10 @@ JavaClass read_class(char *classname) {
         }
     }
 
-    MapEntry * temp_map = calloc(class.field_count*2 + class.method_count, sizeof(MapEntry)); // * 2 because we have no idea if they would be long/double or normal guys 
-    // (though we know know, but too unefficient to count them)
-    memcpy(temp_map, class.class_map, class.max_class_map_index*sizeof(MapEntry));
+    MapEntry *temp_map = calloc(class.field_count * 2 + class.method_count,
+                                sizeof(MapEntry)); // * 2 because we have no idea if they would be long/double or normal guys
+    // (though we know, but too inefficient to count them)
+    memcpy(temp_map, class.class_map, class.max_class_map_index * sizeof(MapEntry));
     free(class.class_map);
     class.class_map = temp_map;
 

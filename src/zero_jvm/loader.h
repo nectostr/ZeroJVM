@@ -6,6 +6,7 @@
 #include "constants.h"
 #include "runtime.h"
 
+
 union ConstantPoolType {
     unsigned short ushort;
     unsigned int uint;
@@ -44,9 +45,9 @@ typedef struct {
     unsigned short attribute_count;
     AttributeInfo *attributes;
 
-    MapEntry * class_map;
-    unsigned int max_class_map_index;; 
-    char * class_rep;
+    MapEntry *class_map;
+    unsigned int max_class_map_index;;
+    char *class_rep;
     unsigned int max_class_rep_offset;
     unsigned int max_class_field_offset;
 } JavaClass;
@@ -73,7 +74,7 @@ AttributeInfo read_attribute_info();
 
 char *get_constant_pool_entry_name(JavaClass *class, int index);
 
-void add_statics_entry(char * name, char * type);
+void add_statics_entry(char *name, char *type);
 
 void add_instance_entry(JavaClass *class, MFInfo *info);
 
