@@ -11,11 +11,12 @@
 #define STATICS_MAP_SIZE   64
 #define WORD_SIZE           4
 
-#define SM  0
-#define SF  1
-#define Map 2
-#define Ref 3
-#define o   4
+#define SM   0
+#define SF   1
+#define SIM  2
+#define Map  3
+#define Ref  4
+#define o    5
 
 
 // 1byte array, so +offset would work nicely

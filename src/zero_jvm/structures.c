@@ -24,10 +24,8 @@ void debug_random_init(){
 
 void debug_print_statics_table() {
     printf("STATICS_TABLE\n");
-    unsigned int * entry = (unsigned int *) statics_table;
-    while (entry[0] != '\0') {
-        printf("%04x\n", *entry);
-        entry++;
+    for (int i = 0; i < current_statics_table_offset; i=i+4) {
+        printf("%d\n", statics_table[i]);
     }
     printf("\n");
 }
@@ -87,27 +85,36 @@ void add_statics_entry(MFInfo * info) {
 
     tag = info->descriptor_index;
     char * type = get_constant_pool_entry_name(tag);
-    //TODO: learn how to know the type of enty
-    if (strcmp(type, "J") || strcmp(type, "D")) {  //if long/double
+    if ((strcmp(type, "J") == 0) ||
+        (strcmp(type, "D") == 0)) {  //if long/double
         current_statics_table_offset += 8;
     } else {
         current_statics_table_offset += 4;
     }
 
     
-    switch (1) { //type
-        case 1: //int, float  
+    switch (*type) { //type
+        case 'Z':
+        case 'B':
+        case 'S':
+        case 'F':
+        case 'C':
+        case 'I': //int, float  
             unsigned int * tmp4 = (unsigned int *) entry;
             *tmp4 = 0;
-            statics_map[current_statics_map_index].type = 1;
-        case 2: //long double
+            statics_map[current_statics_map_index].type = SF;
+            break;
+        case 'J':
+        case 'D': //long double
             unsigned long * tmp8 = (unsigned long *) entry;
             *tmp8 = 0;
-            statics_map[current_statics_map_index].type = 2;
-        case 3: //SIM
-        default: //method, ?
-            *entry = 0;// default or compiled add
-            statics_map[current_statics_map_index].type = 0;
+            statics_map[current_statics_map_index].type = SF;
+            break;
+        case '(': //method,          
+            *entry = 'C';// TODO: default compiler/interpreter link
+            statics_map[current_statics_map_index].type = SM;
+            break;
+        //case ?: //Map, Ref, SIM
     }
     current_statics_map_index++;
 }
