@@ -1,5 +1,6 @@
 
 #include "loader.h"
+#include "runtime.h"
 
 unsigned char filebytebuffer[8];
 FILE *filepointer;
@@ -132,22 +133,22 @@ void add_statics_entry(JavaClass * class, MFInfo *info) {
         * 1. Copy name as a string to statics_map
         * 2. Find out type and chage offset accordingly
         * 3. Convert types to inner types
-        * 4. Update class->max_statics_map_index
+        * 4. Update runtime.max_statics_map_index
 
     */
 
-    class->statics_map[class->max_statics_map_index].offset = class->max_statics_table_offset;
-    char *entry = class->statics_table + class->max_statics_table_offset;
+    runtime.statics_map[runtime.max_statics_map_index].offset = runtime.max_statics_table_offset;
+    char *entry = runtime.statics_table + runtime.max_statics_table_offset;
     int tag = info->name_index;
-    class->statics_map[class->max_statics_map_index].name = get_constant_pool_entry_name(class, tag);
+    runtime.statics_map[runtime.max_statics_map_index].name = get_constant_pool_entry_name(class, tag);
 
     tag = info->descriptor_index;
     char *type = get_constant_pool_entry_name(class, tag);
     if ((strcmp(type, "J") == 0) ||
         (strcmp(type, "D") == 0)) {  //if long/double
-        class->max_statics_table_offset += 8;
+        runtime.max_statics_table_offset += 8;
     } else {
-        class->max_statics_table_offset += 4;
+        runtime.max_statics_table_offset += 4;
     }
 
     switch (*type) { //type
@@ -160,7 +161,7 @@ void add_statics_entry(JavaClass * class, MFInfo *info) {
         {
             unsigned int *tmp4 = (unsigned int *) entry;
             *tmp4 = 0;
-            class->statics_map[class->max_statics_map_index].type = SF;
+            runtime.statics_map[runtime.max_statics_map_index].type = SF;
             break;
         }
         case 'J':
@@ -168,29 +169,24 @@ void add_statics_entry(JavaClass * class, MFInfo *info) {
         {
             unsigned long *tmp8 = (unsigned long *) entry;
             *tmp8 = 0;
-            class->statics_map[class->max_statics_map_index].type = SF;
+            runtime.statics_map[runtime.max_statics_map_index].type = SF;
             break;
         }
         case '(': //method,
             *entry = 'C';// TODO: default compiler/interpreter link
-            if (strcmp(class->statics_map[class->max_statics_map_index].name, "<init>") == 0) {
-                class->statics_map[class->max_statics_map_index].type = SIM;
+            if (strcmp(runtime.statics_map[runtime.max_statics_map_index].name, "<init>") == 0) {
+                runtime.statics_map[runtime.max_statics_map_index].type = SIM;
             } else {
-                class->statics_map[class->max_statics_map_index].type = SM;
+                runtime.statics_map[runtime.max_statics_map_index].type = SM;
             }
             break;
             //case ?: //Map, Ref, SIM
     }
-    class->max_statics_map_index++;
+    runtime.max_statics_map_index++;
 }
 
 JavaClass read_class(char *classname) {
     JavaClass class;
-    class.max_statics_map_index = 0;
-    class.statics_map = calloc(STATICS_MAP_SIZE, sizeof(MapEntry));
-
-    class.max_statics_table_offset = 0;
-    class.statics_table = calloc(STATICS_TABLE_SIZE, sizeof(char));
 
     loadfile(classname);
     read_uint32(); // cafebabe
@@ -256,18 +252,18 @@ JavaClass read_class(char *classname) {
 
 
 // DEBUG FUNCTIONS
-void debug_print_statics_table(JavaClass * class) {
+void debug_print_statics_table() {
     printf("STATICS_TABLE\n");
-    for (int i = 0; i < class->max_statics_table_offset; i = i + 4) {
-        printf("%d\n", class->statics_table[i]);
+    for (int i = 0; i < runtime.max_statics_table_offset; i = i + 4) {
+        printf("%d\n", runtime.statics_table[i]);
     }
     printf("\n");
 }
 
-void debug_print_statics_map(JavaClass * class) {
+void debug_print_statics_map() {
     printf("STATICS_MAP\n");
-    for (int i = 0; i < class->max_statics_map_index; i++) {
-        printf("%s %d %d\n", class->statics_map[i].name, class->statics_map[i].type, class->statics_map[i].offset);
+    for (int i = 0; i < runtime.max_statics_map_index; i++) {
+        printf("%s %d %d\n", runtime.statics_map[i].name, runtime.statics_map[i].type, runtime.statics_map[i].offset);
     }
     printf("\n");
 }

@@ -31,23 +31,10 @@ typedef struct {
     AttributeInfo *attributes;
 } MFInfo;
 
-typedef struct {
-    char *name;
-    unsigned char type;
-    unsigned int offset;
-} MapEntry;
-
 
 typedef struct {
-    unsigned int max_statics_table_offset;
-    char *statics_table;
-
-    unsigned int max_statics_map_index;
-    MapEntry *statics_map;
-
     unsigned short constant_pool_size;
     ConstantPoolEntry *constant_pool;
-
     unsigned short this;  // look in the constant pool
     unsigned short super;  // look in the constant pool
     unsigned short access_flags;
@@ -83,6 +70,6 @@ void add_statics_entry(JavaClass *class, MFInfo *info);
 
 JavaClass read_class(char *classname);
 
-void debug_print_statics_map(JavaClass *class);
+void debug_print_statics_map();
 
-void debug_print_statics_table(JavaClass *class);
+void debug_print_statics_table();
