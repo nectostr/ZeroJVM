@@ -51,7 +51,7 @@ unsigned short read_uint16();
 unsigned int read_uint32();
 unsigned long read_uint64();
 
-struct ConstantPoolEntry read_constant_pool_entry();
+struct ConstantPoolEntry read_constant_pool_entry(unsigned char tag);
 struct MethodInfo read_method_info();
 struct FieldInfo read_field_info();
 struct AttributeInfo read_attribute_info();

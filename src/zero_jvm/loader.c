@@ -32,9 +32,9 @@ unsigned long read_uint64() {
            (unsigned long) filebytebuffer[6] << 8 | (unsigned long) filebytebuffer[7];
 }
 
-struct ConstantPoolEntry read_constant_pool_entry() {
+struct ConstantPoolEntry read_constant_pool_entry(unsigned char tag) {
     struct ConstantPoolEntry entry;
-    entry.tag = read_uint8();
+    entry.tag = tag;
     switch (entry.tag) {
         case 1:
             // utf8
@@ -128,7 +128,12 @@ int read_class() {
     struct ConstantPoolEntry *constant_table = calloc(constant_pool_count, sizeof(struct ConstantPoolEntry));
 
     for (unsigned short i = 1; i < constant_pool_count; i++) {
-        constant_table[i] = read_constant_pool_entry();
+        unsigned char tag = read_uint8();
+        constant_table[i] = read_constant_pool_entry(tag);
+        if (tag == 5 || tag == 6) {
+            i++;  // 8-byte constants like double or long
+        }
+
     }
     unsigned short access_flags = read_uint16();
     unsigned short this_class = read_uint16();
