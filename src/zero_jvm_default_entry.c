@@ -12,5 +12,6 @@ int32_t main(int argc, char** argv) {
 
     debug_print_map(&entrypoint);
     debug_print_rep(&entrypoint);
+    debug_print_obj_tmpl(&entrypoint);
     return 0;
 }

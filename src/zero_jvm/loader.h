@@ -20,12 +20,6 @@ typedef struct {
 } ConstantPoolEntry;
 
 typedef struct {
-    unsigned short attribute_name_index;
-    unsigned int attribute_length;
-    unsigned char *info;
-} AttributeInfo;
-
-typedef struct {
     unsigned short access_flags;
     unsigned short name_index;
     unsigned short descriptor_index;
@@ -50,6 +44,8 @@ typedef struct {
     char *class_rep;
     unsigned int max_class_rep_offset;
     unsigned int max_class_field_offset;
+
+    char* object_instance_template;
 } JavaClass;
 
 extern unsigned char filebytebuffer[8];
@@ -74,7 +70,7 @@ AttributeInfo read_attribute_info();
 
 char *get_constant_pool_entry_name(JavaClass *class, int index);
 
-void add_statics_entry(char *name, char *type);
+void add_statics_entry(JavaClass *class, MFInfo *info);
 
 void add_instance_entry(JavaClass *class, MFInfo *info);
 
@@ -87,3 +83,5 @@ void debug_print_statics_table();
 void debug_print_rep(JavaClass *class);
 
 void debug_print_map(JavaClass *class);
+
+void debug_print_obj_tmpl(JavaClass *class);

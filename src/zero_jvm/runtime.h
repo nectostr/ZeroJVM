@@ -3,11 +3,19 @@
 #include <stdlib.h>
 #include "constants.h"
 
+typedef struct {
+    unsigned short attribute_name_index;
+    unsigned int attribute_length;
+    unsigned char *info;
+} AttributeInfo;
 
 typedef struct {
     char *name;
     unsigned char type;
     unsigned int offset;
+    unsigned short access_flags;
+    unsigned short attributes_count;
+    AttributeInfo *attributes;
 } MapEntry; // static map entry
 
 typedef struct {

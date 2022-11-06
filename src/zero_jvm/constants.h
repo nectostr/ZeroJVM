@@ -10,12 +10,12 @@
 #define WORD_SIZE           4
 
 // TODO: add type name
-#define SM   0
-#define SF   1
-#define SIM  2
-#define Map  3
-#define Ref  4
-#define o    5
+#define MAP_TYPE_SM   0
+#define MAP_TYPE_SF   1
+#define MAP_TYPE_SIM  2
+#define MAP_TYPE_MAP  3
+#define MAP_TYPE_REP  4
+#define MAP_TYPE_O    5
 
 #define ACC_PUBLIC        0x0001    // Marked or implicitly public in source.
 #define ACC_PROTECTED    0x0004    // Marked protected in source.
