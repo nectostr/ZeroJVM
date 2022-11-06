@@ -1,10 +1,12 @@
 #pragma once
 
-
+#define STATICS_MAP_SIZE   64
 #define STATICS_TABLE_SIZE 64
+#define MAX_THEORETICAL_CLASS_MAP_SIZE 64
+
+
 //#define MAX_NAME_SIZE      32
 #define MAX_TYPE_SIZE       4
-#define STATICS_MAP_SIZE   64
 #define WORD_SIZE           4
 
 // TODO: add type name
