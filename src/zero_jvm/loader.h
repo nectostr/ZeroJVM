@@ -1,27 +1,9 @@
 #pragma once
-#ifndef LOADER_H
-#define LOADER_H
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define FILENAME "entrypoint.class"
-
-#define ACC_PUBLIC 	    0x0001 	// Marked or implicitly public in source.
-#define ACC_PROTECTED 	0x0004 	// Marked protected in source.
-#define ACC_PRIVATE 	0x0002  //	Marked private in source.
-#define ACC_STATIC 	    0x0008 	// Marked or implicitly static in source.
-#define ACC_FINAL   	0x0010 	// Marked or implicitly final in source.
-#define ACC_INTERFACE 	0x0200 	// Was an interface in source.
-#define ACC_ABSTRACT 	0x0400 	// Marked or implicitly abstract in source.
-#define ACC_SYNTHETIC 	0x1000 	// Declared synthetic; not present in the source code.
-#define ACC_ANNOTATION 	0x2000 	// Declared as an annotation type.
-#define ACC_ENUM 	    0x4000 	// Declared as an enum type. 
-
-extern unsigned char filebytebuffer[8];
-extern FILE *filepointer;
-extern struct ConstantPoolEntry *constant_table;
+#include "constants.h"
 
 union ConstantPoolType {
     unsigned short ushort;
@@ -29,42 +11,78 @@ union ConstantPoolType {
     unsigned long ulong;
 };
 
-struct ConstantPoolEntry {
+typedef struct {
     unsigned char tag;
     union ConstantPoolType data;
     unsigned char *addon;
-};
+} ConstantPoolEntry;
 
-struct AttributeInfo {
+typedef struct {
     unsigned short attribute_name_index;
     unsigned int attribute_length;
     unsigned char *info;
-};
+} AttributeInfo;
 
-typedef struct{
+typedef struct {
     unsigned short access_flags;
     unsigned short name_index;
     unsigned short descriptor_index;
     unsigned short attributes_count;
-    struct AttributeInfo *attributes;
+    AttributeInfo *attributes;
 } MFInfo;
 
-void loadfile();
+typedef struct {
+    char *name;
+    unsigned char type;
+    unsigned int offset;
+} MapEntry;
+
+
+typedef struct {
+    unsigned int max_statics_table_offset;
+    char *statics_table;
+
+    unsigned int max_statics_map_index;
+    MapEntry *statics_map;
+
+    unsigned short constant_pool_size;
+    ConstantPoolEntry *constant_pool;
+
+    unsigned short this;  // look in the constant pool
+    unsigned short super;  // look in the constant pool
+    unsigned short access_flags;
+    unsigned short field_count;
+    unsigned short method_count;
+    unsigned short attribute_count;
+    AttributeInfo *attributes;
+} JavaClass;
+
+extern unsigned char filebytebuffer[8];
+extern FILE *filepointer;
+extern ConstantPoolEntry *constant_table;
+
+void loadfile(const char *classname);
 
 unsigned char read_uint8();
+
 unsigned short read_uint16();
+
 unsigned int read_uint32();
+
 unsigned long read_uint64();
 
-struct ConstantPoolEntry read_constant_pool_entry(unsigned char tag);
-struct MethodInfo read_method_info();
-struct FieldInfo read_field_info();
-struct AttributeInfo read_attribute_info();
-char * get_constant_pool_entry_name(int index);
+ConstantPoolEntry read_constant_pool_entry(unsigned char tag);
 
-int read_class();
+MFInfo read_meth_field_info();
 
+AttributeInfo read_attribute_info();
 
-#include "structures.h"
+char *get_constant_pool_entry_name(JavaClass *class, int index);
 
-#endif // LOADER_H
+void add_statics_entry(JavaClass *class, MFInfo *info);
+
+JavaClass read_class(char *classname);
+
+void debug_print_statics_map(JavaClass *class);
+
+void debug_print_statics_table(JavaClass *class);

@@ -3,10 +3,9 @@
 
 unsigned char filebytebuffer[8];
 FILE *filepointer;
-struct ConstantPoolEntry *constant_table;
 
-void loadfile() {
-    filepointer = fopen(FILENAME, "rb");
+void loadfile(const char *classname) {
+    filepointer = fopen(classname, "rb");
 }
 
 unsigned char read_uint8() {
@@ -33,8 +32,8 @@ unsigned long read_uint64() {
            (unsigned long) filebytebuffer[6] << 8 | (unsigned long) filebytebuffer[7];
 }
 
-struct ConstantPoolEntry read_constant_pool_entry(unsigned char tag) {
-    struct ConstantPoolEntry entry;
+ConstantPoolEntry read_constant_pool_entry(unsigned char tag) {
+    ConstantPoolEntry entry;
     entry.tag = tag;
     switch (entry.tag) {
         case 1:
@@ -88,15 +87,15 @@ MFInfo read_meth_field_info() {
     info.name_index = read_uint16();
     info.descriptor_index = read_uint16();
     info.attributes_count = read_uint16();
-    info.attributes = calloc(info.attributes_count, sizeof(struct AttributeInfo));
+    info.attributes = calloc(info.attributes_count, sizeof(AttributeInfo));
     for (unsigned short i = 0; i < info.attributes_count; i++) {
         info.attributes[i] = read_attribute_info();
     }
     return info;
-};
+}
 
-struct AttributeInfo read_attribute_info() {
-    struct AttributeInfo attribute;
+AttributeInfo read_attribute_info() {
+    AttributeInfo attribute;
     attribute.attribute_name_index = read_uint16();
     attribute.attribute_length = read_uint32();
     attribute.info = calloc(attribute.attribute_length, 1);
@@ -106,69 +105,144 @@ struct AttributeInfo read_attribute_info() {
     return attribute;
 }
 
-char * get_constant_pool_entry_name(int index) {
-    struct  ConstantPoolEntry * entry = &constant_table[index];
+char *get_constant_pool_entry_name(JavaClass * class, int index) {
+    ConstantPoolEntry *entry = &class->constant_pool[index];
     while (entry->tag != 1) {
-        entry = &constant_table[entry->data.ushort];
+        entry = &class->constant_pool[entry->data.ushort];
     }
     return (char *) entry->addon;
-    
+
 }
 
-int read_class() {
-    loadfile();
-    unsigned int cafebabe = read_uint32();
-    unsigned short minor = read_uint16();
-    unsigned short major = read_uint16();
-    unsigned short constant_pool_count = read_uint16();
 
-    constant_table = calloc(constant_pool_count, sizeof(struct ConstantPoolEntry));
+/*
+[Z = boolean
+[B = byte
+[S = short
+[I = int
+[J = long
+[F = float
+[D = double
+[C = char
+[L = any non-primitives(Object)
+*/
 
-    for (unsigned short i = 1; i < constant_pool_count; i++) {
+void add_statics_entry(JavaClass * class, MFInfo *info) {
+    /*
+        * 1. Copy name as a string to statics_map
+        * 2. Find out type and chage offset accordingly
+        * 3. Convert types to inner types
+        * 4. Update class->max_statics_map_index
+
+    */
+
+    class->statics_map[class->max_statics_map_index].offset = class->max_statics_table_offset;
+    char *entry = class->statics_table + class->max_statics_table_offset;
+    int tag = info->name_index;
+    class->statics_map[class->max_statics_map_index].name = get_constant_pool_entry_name(class, tag);
+
+    tag = info->descriptor_index;
+    char *type = get_constant_pool_entry_name(class, tag);
+    if ((strcmp(type, "J") == 0) ||
+        (strcmp(type, "D") == 0)) {  //if long/double
+        class->max_statics_table_offset += 8;
+    } else {
+        class->max_statics_table_offset += 4;
+    }
+
+    switch (*type) { //type
+        case 'Z':
+        case 'B':
+        case 'S':
+        case 'F':
+        case 'C':
+        case 'I': //int, float
+        {
+            unsigned int *tmp4 = (unsigned int *) entry;
+            *tmp4 = 0;
+            class->statics_map[class->max_statics_map_index].type = SF;
+            break;
+        }
+        case 'J':
+        case 'D': //long double
+        {
+            unsigned long *tmp8 = (unsigned long *) entry;
+            *tmp8 = 0;
+            class->statics_map[class->max_statics_map_index].type = SF;
+            break;
+        }
+        case '(': //method,
+            *entry = 'C';// TODO: default compiler/interpreter link
+            if (strcmp(class->statics_map[class->max_statics_map_index].name, "<init>") == 0) {
+                class->statics_map[class->max_statics_map_index].type = SIM;
+            } else {
+                class->statics_map[class->max_statics_map_index].type = SM;
+            }
+            break;
+            //case ?: //Map, Ref, SIM
+    }
+    class->max_statics_map_index++;
+}
+
+JavaClass read_class(char *classname) {
+    JavaClass class;
+    class.max_statics_map_index = 0;
+    class.statics_map = calloc(STATICS_MAP_SIZE, sizeof(MapEntry));
+
+    class.max_statics_table_offset = 0;
+    class.statics_table = calloc(STATICS_TABLE_SIZE, sizeof(char));
+
+    loadfile(classname);
+    read_uint32(); // cafebabe
+    read_uint16(); // minor version
+    read_uint16(); // major version
+
+    class.constant_pool_size = read_uint16();
+    class.constant_pool = calloc(class.constant_pool_size, sizeof(ConstantPoolEntry));
+    for (unsigned short i = 1; i < class.constant_pool_size; i++) {
         unsigned char tag = read_uint8();
-        constant_table[i] = read_constant_pool_entry(tag);
+        class.constant_pool[i] = read_constant_pool_entry(tag);
         if (tag == 5 || tag == 6) {
             i++;  // 8-byte constants like double or long
         }
-
     }
-    unsigned short access_flags = read_uint16();
-    unsigned short this_class = read_uint16();
-    unsigned short super_class = read_uint16();
-    unsigned short interfaces_count = read_uint16(); // should be always 0
-    if (interfaces_count > 0) {
+
+    class.access_flags = read_uint16();
+    class.this = read_uint16();
+    class.super = read_uint16();
+    unsigned short interface_count = read_uint16(); // should be always 0
+    if (interface_count > 0) {
         // panic
         exit(1);
     }
 
-    unsigned short fields_count = read_uint16();
-    MFInfo *field_table = calloc(fields_count, sizeof(MFInfo));
-
-    for (unsigned short i = 0; i < fields_count; ++i) {
-        field_table[i] = read_meth_field_info();
+    class.field_count = read_uint16();
+    for (unsigned short i = 0; i < class.field_count; ++i) {
+        MFInfo current_field = read_meth_field_info();
         // TODO: if static, add to statics table
-        if (field_table[i].access_flags & ACC_STATIC) {
-            add_statics_entry(&field_table[i]);
+        if (current_field.access_flags & ACC_STATIC) {
+            add_statics_entry(&class, &current_field);
         }
+        // TODO: implement instance method logic
     }
 
-    unsigned short methods_count = read_uint16();
-    MFInfo *method_table = calloc(fields_count, sizeof(MFInfo));
-    for (unsigned short i = 0; i < methods_count; ++i) {
-        method_table[i] = read_meth_field_info();
-        char * name = get_constant_pool_entry_name(method_table[i].name_index);
-    
-        if ((strcmp(name,"<clinit>") != 0) &&
-            ((method_table[i].access_flags & ACC_STATIC) ||
-            (strcmp(name,"<init>") == 0))  )  {
-            add_statics_entry(&method_table[i]);
+    class.method_count = read_uint16();
+    for (unsigned short i = 0; i < class.method_count; ++i) {
+        MFInfo current_method = read_meth_field_info();
+        char *name = get_constant_pool_entry_name(&class, current_method.name_index);
+
+        if ((strcmp(name, "<clinit>") != 0) &&
+            ((current_method.access_flags & ACC_STATIC) ||
+             (strcmp(name, "<init>") == 0))) {
+            add_statics_entry(&class, &current_method);
         }
+        // TODO: implement instance method logic
     }
 
-    unsigned short attributes_count = read_uint16();
-    struct AttributeInfo *attribute_table = calloc(fields_count, sizeof(struct AttributeInfo));
-    for (unsigned short i = 0; i < attributes_count; ++i) {
-        attribute_table[i] = read_attribute_info();
+    class.attribute_count = read_uint16();
+    class.attributes = calloc(class.attribute_count, sizeof(AttributeInfo));
+    for (unsigned short i = 0; i < class.attribute_count; ++i) {
+        class.attributes[i] = read_attribute_info();
     }
 
     long bytes_read = ftell(filepointer);
@@ -176,5 +250,24 @@ int read_class() {
     long bytes_total = ftell(filepointer);
 
     printf("Bytes read: %ld, bytes total: %ld \n", bytes_read, bytes_total);
-    return 0;
+    fclose(filepointer);
+    return class;
+}
+
+
+// DEBUG FUNCTIONS
+void debug_print_statics_table(JavaClass * class) {
+    printf("STATICS_TABLE\n");
+    for (int i = 0; i < class->max_statics_table_offset; i = i + 4) {
+        printf("%d\n", class->statics_table[i]);
+    }
+    printf("\n");
+}
+
+void debug_print_statics_map(JavaClass * class) {
+    printf("STATICS_MAP\n");
+    for (int i = 0; i < class->max_statics_map_index; i++) {
+        printf("%s %d %d\n", class->statics_map[i].name, class->statics_map[i].type, class->statics_map[i].offset);
+    }
+    printf("\n");
 }
