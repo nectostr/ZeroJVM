@@ -3,6 +3,7 @@
 
 unsigned char filebytebuffer[8];
 FILE *filepointer;
+struct ConstantPoolEntry *constant_table;
 
 void loadfile() {
     filepointer = fopen(FILENAME, "rb");
@@ -81,8 +82,8 @@ struct ConstantPoolEntry read_constant_pool_entry() {
     return entry;
 }
 
-struct MethodInfo read_method_info() {
-    struct MethodInfo info;
+MFInfo read_meth_field_info() {
+    MFInfo info;
     info.access_flags = read_uint16();
     info.name_index = read_uint16();
     info.descriptor_index = read_uint16();
@@ -92,20 +93,7 @@ struct MethodInfo read_method_info() {
         info.attributes[i] = read_attribute_info();
     }
     return info;
-}
-
-struct FieldInfo read_field_info() {
-    struct FieldInfo info;
-    info.access_flags = read_uint16();
-    info.name_index = read_uint16();
-    info.descriptor_index = read_uint16();
-    info.attributes_count = read_uint16();
-    info.attributes = calloc(info.attributes_count, sizeof(struct AttributeInfo));
-    for (unsigned short i = 0; i < info.attributes_count; i++) {
-        info.attributes[i] = read_attribute_info();
-    }
-    return info;
-}
+};
 
 struct AttributeInfo read_attribute_info() {
     struct AttributeInfo attribute;
@@ -125,7 +113,7 @@ int read_class() {
     unsigned short major = read_uint16();
     unsigned short constant_pool_count = read_uint16();
 
-    struct ConstantPoolEntry *constant_table = calloc(constant_pool_count, sizeof(struct ConstantPoolEntry));
+    constant_table = calloc(constant_pool_count, sizeof(struct ConstantPoolEntry));
 
     for (unsigned short i = 1; i < constant_pool_count; i++) {
         constant_table[i] = read_constant_pool_entry();
@@ -140,16 +128,23 @@ int read_class() {
     }
 
     unsigned short fields_count = read_uint16();
-    struct FieldInfo *field_table = calloc(fields_count, sizeof(struct FieldInfo));
+    MFInfo *field_table = calloc(fields_count, sizeof(MFInfo));
 
     for (unsigned short i = 0; i < fields_count; ++i) {
-        field_table[i] = read_field_info();
+        field_table[i] = read_meth_field_info();
+        // TODO: if static, add to statics table
+        if (field_table[i].access_flags & ACC_STATIC) {
+            add_statics_entry(&field_table[i]);
+        }
     }
 
     unsigned short methods_count = read_uint16();
-    struct MethodInfo *method_table = calloc(fields_count, sizeof(struct MethodInfo));
+    MFInfo *method_table = calloc(fields_count, sizeof(MFInfo));
     for (unsigned short i = 0; i < methods_count; ++i) {
-        method_table[i] = read_method_info();
+        method_table[i] = read_meth_field_info();
+        if (method_table[i].access_flags & ACC_STATIC) {
+            add_statics_entry(&method_table[i]);
+        }
     }
 
     unsigned short attributes_count = read_uint16();

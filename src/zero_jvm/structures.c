@@ -3,7 +3,6 @@
 //
 
 #include "structures.h"
-#include "loader.h"
 
 char s_t[STATICS_TABLE_SIZE];
 char * statics_table = s_t;
@@ -41,8 +40,38 @@ void debug_print_statics_map() {
     printf("\n");
 }
 
+char * get_constant_pool_entry_name(int index) {
+    struct  ConstantPoolEntry * entry = &constant_table[index];
+    while (entry->tag != 1) {
+        entry = &constant_table[entry->data.ushort];
+    }
+    return (char *) entry->addon;
+    
+}
 
-void add_statics_entry(char* name, char* type) {
+// char * get_constant_pool_entry_name(int index) {
+//     struct  ConstantPoolEntry * entry = &constant_table[index];
+//     while (entry->tag != 1) {
+//         entry = &constant_table[entry->data.ushort];
+//     }
+//     return (char *) entry->addon;
+    
+// }
+
+
+/*
+[Z = boolean
+[B = byte
+[S = short
+[I = int
+[J = long
+[F = float
+[D = double
+[C = char
+[L = any non-primitives(Object)
+*/
+
+void add_statics_entry(MFInfo * info) {
     /*
         * 1. Copy name as a string to statics_map
         * 2. Find out type and chage offset accordingly
@@ -51,32 +80,33 @@ void add_statics_entry(char* name, char* type) {
 
     */
 
-
     statics_map[current_statics_map_index].offset = current_statics_table_offset;
-    //TODO: change the size to something valid
     char * entry = statics_table + current_statics_table_offset;
-    statics_map[current_statics_map_index].name = name;
+    int tag = info->name_index;
+    statics_map[current_statics_map_index].name =  get_constant_pool_entry_name(tag);
 
+    tag = info->descriptor_index;
+    char * type = get_constant_pool_entry_name(tag);
     //TODO: learn how to know the type of enty
-    if (1) {  //if long/double
+    if (strcmp(type, "J") || strcmp(type, "D")) {  //if long/double
         current_statics_table_offset += 8;
     } else {
         current_statics_table_offset += 4;
     }
 
-    //TODO: learn how to know the type
-    switch (1) { //type
-        case 1: //int, float  
-            unsigned int * tmp4 = (unsigned int *) entry;
-            *tmp4 = 0;
-            statics_map[current_statics_map_index].type = 1;
-        case 2: //long double
-            unsigned long * tmp8 = (unsigned long *) entry;
-            *tmp8 = 0;
-            statics_map[current_statics_map_index].type = 2;
-        default: //method, ?
-            *entry = 0;// default or compiled add
-            statics_map[current_statics_map_index].type = 0;
-    }
+    // //TODO: learn how to know the type
+    // switch (1) { //type
+    //     case 1: //int, float  
+    //         unsigned int * tmp4 = (unsigned int *) entry;
+    //         *tmp4 = 0;
+    //         statics_map[current_statics_map_index].type = 1;
+    //     case 2: //long double
+    //         unsigned long * tmp8 = (unsigned long *) entry;
+    //         *tmp8 = 0;
+    //         statics_map[current_statics_map_index].type = 2;
+    //     default: //method, ?
+    //         *entry = 0;// default or compiled add
+    //         statics_map[current_statics_map_index].type = 0;
+    // }
     current_statics_map_index++;
 }

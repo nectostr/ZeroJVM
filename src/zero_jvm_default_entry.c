@@ -4,8 +4,8 @@
 
 
 int32_t main(int argc, char** argv) {
-    //return read_class();
-    debug_random_init();
+    read_class();
+    // debug_random_init();
     debug_print_statics_table();
     debug_print_statics_map();
     return 0;

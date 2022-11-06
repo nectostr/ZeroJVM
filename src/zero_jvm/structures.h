@@ -2,6 +2,9 @@
 #ifndef STRUCTURES_H
 #define STRUCTURES_H
 
+#include <string.h>
+#include "loader.h"
+
 #define STATICS_TABLE_SIZE 64
 //#define MAX_NAME_SIZE      32
 #define MAX_TYPE_SIZE       4
@@ -37,6 +40,6 @@ void debug_random_init();
 void debug_print_statics_map();
 void debug_print_statics_table();
 
-void add_statics_entry(char* name, char* type);
+void add_statics_entry(MFInfo * info);
 
 #endif // STRUCTURES_H
