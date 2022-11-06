@@ -184,6 +184,10 @@ void add_statics_entry(JavaClass * class, MFInfo *info) {
     class->max_statics_map_index++;
 }
 
+void add_instance_entry(JavaClass * class, MFInfo *info) {
+    // add internal map and internal rep
+}
+
 JavaClass read_class(char *classname) {
     JavaClass class;
     class.max_statics_map_index = 0;
@@ -222,8 +226,10 @@ JavaClass read_class(char *classname) {
         // TODO: if static, add to statics table
         if (current_field.access_flags & ACC_STATIC) {
             add_statics_entry(&class, &current_field);
+        } else {
+            add_instance_entry(&class, &current_field);
         }
-        // TODO: implement instance method logic
+
     }
 
     class.method_count = read_uint16();
@@ -235,8 +241,11 @@ JavaClass read_class(char *classname) {
             ((current_method.access_flags & ACC_STATIC) ||
              (strcmp(name, "<init>") == 0))) {
             add_statics_entry(&class, &current_method);
+        } else if (strcmp(name, "<clinit>") != 0) {
+            add_instance_entry(&class, &current_method);
+        } else {
+            //"Just call me"
         }
-        // TODO: implement instance method logic
     }
 
     class.attribute_count = read_uint16();

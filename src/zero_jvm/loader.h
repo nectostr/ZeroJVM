@@ -81,6 +81,8 @@ char *get_constant_pool_entry_name(JavaClass *class, int index);
 
 void add_statics_entry(JavaClass *class, MFInfo *info);
 
+void add_instance_entry(JavaClass *class, MFInfo *info);
+
 JavaClass read_class(char *classname);
 
 void debug_print_statics_map(JavaClass *class);
