@@ -8,23 +8,23 @@ void loadfile(const char *classname) {
     filepointer = fopen(classname, "rb");
 }
 
-unsigned char read_uint8() {
+static unsigned char read_uint8() {
     fread(filebytebuffer, 1, 1, filepointer);
     return filebytebuffer[0];
 }
 
-unsigned short read_uint16() {
+static unsigned short read_uint16() {
     fread(filebytebuffer, 2, 1, filepointer);
     return (unsigned short) filebytebuffer[0] << 8 | (unsigned short) filebytebuffer[1];
 }
 
-unsigned int read_uint32() {
+static unsigned int read_uint32() {
     fread(filebytebuffer, 4, 1, filepointer);
     return (unsigned int) filebytebuffer[0] << 24 | (unsigned int) filebytebuffer[1] << 16 |
            (unsigned int) filebytebuffer[2] << 8 | (unsigned int) filebytebuffer[3];
 }
 
-unsigned long read_uint64() {
+__attribute__((unused)) static unsigned long read_uint64() {
     fread(filebytebuffer, 8, 1, filepointer);
     return (unsigned long) filebytebuffer[0] << 56 | (unsigned long) filebytebuffer[1] << 48 |
            (unsigned long) filebytebuffer[2] << 40 | (unsigned long) filebytebuffer[3] << 32 |
@@ -187,6 +187,22 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
     runtime.max_statics_map_index++;
 }
 
+/// Go to static table and find method by full name (Class.name) and signature
+void find_static_method(char *name, char *signature, unsigned short access_flags) {
+    for (unsigned int i = 0; i < runtime.max_statics_map_index; i++) {
+        if (
+                runtime.statics_map[i].type == MAP_TYPE_SM
+                && (runtime.statics_map[i].access_flags & access_flags) == access_flags
+                && strcmp(runtime.statics_map[i].name, name) == 0
+                ) {
+            // TODO: check method signature
+            unsigned int offset = runtime.statics_map[i].offset;
+
+        }
+    }
+}
+
+
 void add_instance_entry(JavaClass *class, MFInfo *info) {
 
     char *name = get_constant_pool_entry_name(class, info->name_index);
@@ -283,9 +299,9 @@ JavaClass read_class(char *classname) {
     class.field_count = read_uint16();
 
     class.class_map = calloc(MAX_THEORETICAL_CLASS_MAP_SIZE, sizeof(MapEntry));
-    
+
     class.object_instance_template = calloc(class.field_count * 2, WORD_SIZE); // see any other * 2 explanation
-    
+
     for (unsigned short i = 0; i < class.field_count; ++i) {
         MFInfo current_field = read_meth_field_info();
         char *name = get_constant_pool_entry_name(&class, current_field.name_index);
@@ -302,7 +318,7 @@ JavaClass read_class(char *classname) {
 
     class.class_rep = calloc(class.method_count, WORD_SIZE);
     // Because we copy class red address, that callocs only here. 
-    unsigned int * header = (unsigned int *) class.object_instance_template;
+    unsigned int *header = (unsigned int *) class.object_instance_template;
     memcpy(header, &class.class_rep, WORD_SIZE);
     header++;
     unsigned int tmp = 100;
@@ -313,14 +329,14 @@ JavaClass read_class(char *classname) {
         MFInfo current_method = read_meth_field_info();
         char *name = get_constant_pool_entry_name(&class, current_method.name_index);
         char *type = get_constant_pool_entry_name(&class, current_method.descriptor_index);
-        if (strcmp(name, "<clinit>") == 0)        {
+        if (strcmp(name, "<clinit>") == 0) {
             //TODO: "Just call me, I am always last"
         } else if ((current_method.access_flags & ACC_STATIC) ||
-             (strcmp(name, "<init>") == 0)) {
+                   (strcmp(name, "<init>") == 0)) {
             add_statics_entry(&class, &current_method);
         } else {
             add_instance_entry(&class, &current_method);
-        } 
+        }
     }
 
     // add map and rep to statics
@@ -328,7 +344,7 @@ JavaClass read_class(char *classname) {
     runtime.statics_map[runtime.max_statics_map_index].access_flags = 0;
     runtime.statics_map[runtime.max_statics_map_index].attributes_count = 0;
     runtime.statics_map[runtime.max_statics_map_index].attributes = NULL;
-    runtime.statics_map[runtime.max_statics_map_index].offset = runtime.max_statics_table_offset;    
+    runtime.statics_map[runtime.max_statics_map_index].offset = runtime.max_statics_table_offset;
     memcpy(runtime.statics_table + runtime.max_statics_table_offset, &class.class_rep, WORD_SIZE);
     runtime.max_statics_table_offset += 4;
     runtime.statics_map[runtime.max_statics_map_index].type = MAP_TYPE_REP;
@@ -373,10 +389,8 @@ void debug_print_statics_table() {
     printf("STATICS_TABLE\n");
     unsigned int *ptr = malloc(4);
     for (int i = 0; i < runtime.max_statics_table_offset; i = i + 4) {
-        
         memcpy(ptr, &(runtime.statics_table[i]), 4);
-        printf("%p\t", *ptr);
-        
+//        printf("%p\t", *ptr);
         printf("%d\n", *ptr);
     }
     free(ptr);
@@ -396,10 +410,9 @@ void debug_print_rep(JavaClass *class) {
     printf("%s REP\n", get_constant_pool_entry_name(class, class->this));
     unsigned int *ptr = malloc(4);
     for (int i = 0; i < class->max_class_rep_offset; i = i + 4) {
-        
         memcpy(ptr, &class->class_rep[i], 4);
-        printf("%p\n", *ptr);
-       
+//        printf("%p\n", *ptr);
+        printf("%d\n", *ptr);
     }
     free(ptr);
     printf("\n");
@@ -419,12 +432,12 @@ void debug_print_obj_tmpl(JavaClass *class) {
     printf("%s obj template\n", get_constant_pool_entry_name(class, class->this));
     unsigned int *ptr = malloc(4);
     memcpy(ptr, &class->object_instance_template[0], 4);
-    printf("%p\n", *ptr);
-   
+//    printf("%p\n", *ptr);
+    printf("%d\n", *ptr);
     for (int i = 1; i < class->max_class_field_offset; i = i + 4) {
         memcpy(ptr, &class->object_instance_template[i], 4);
         printf("%d\n", *ptr);
     }
-     free(ptr);
+    free(ptr);
     printf("\n");
 }

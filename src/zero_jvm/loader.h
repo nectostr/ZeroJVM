@@ -52,17 +52,16 @@ typedef struct {
 
 extern unsigned char filebytebuffer[8];
 extern FILE *filepointer;
-extern ConstantPoolEntry *constant_table;
 
 void loadfile(const char *classname);
 
-unsigned char read_uint8();
+static unsigned char read_uint8();
 
-unsigned short read_uint16();
+static unsigned short read_uint16();
 
-unsigned int read_uint32();
+static unsigned int read_uint32();
 
-unsigned long read_uint64();
+__attribute__((unused)) static unsigned long read_uint64();
 
 ConstantPoolEntry read_constant_pool_entry(unsigned char tag);
 
@@ -73,6 +72,8 @@ AttributeInfo read_attribute_info();
 char *get_constant_pool_entry_name(JavaClass *class, int index);
 
 void add_statics_entry(JavaClass *class, MFInfo *info);
+
+void find_static_method(char *name, char *signature, unsigned short access_flags);
 
 void add_instance_entry(JavaClass *class, MFInfo *info);
 
