@@ -22,7 +22,7 @@ typedef struct {
 
 typedef struct {
     unsigned int max_statics_table_offset;
-    char *statics_table;
+    unsigned char *statics_table;
 
     unsigned int max_statics_map_index;
     MapEntry *statics_map;

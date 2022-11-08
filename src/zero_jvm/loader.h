@@ -73,7 +73,7 @@ char *get_constant_pool_entry_name(JavaClass *class, int index);
 
 void add_statics_entry(JavaClass *class, MFInfo *info);
 
-char * find_static_method(char *name, char *signature, unsigned short access_flags);
+unsigned char * find_static_method(char *name, char *signature, unsigned short access_flags);
 
 void add_instance_entry(JavaClass *class, MFInfo *info);
 

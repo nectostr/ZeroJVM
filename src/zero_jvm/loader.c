@@ -54,7 +54,7 @@ ConstantPoolEntry read_constant_pool_entry(unsigned char tag) {
             // long
         case 6:
             // double
-            entry.data.ulong = ((long) read_uint32() << 32) + read_uint32();
+            entry.data.ulong = (((unsigned long) read_uint32()) << 32) + read_uint32();
             break;
         case 7:
             // class
@@ -140,7 +140,7 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
     char *type = get_constant_pool_entry_name(class, info->descriptor_index);
 
     runtime.statics_map[runtime.max_statics_map_index].offset = runtime.max_statics_table_offset;
-    char *entry = runtime.statics_table + runtime.max_statics_table_offset;
+    unsigned char *entry = runtime.statics_table + runtime.max_statics_table_offset;
     runtime.statics_map[runtime.max_statics_map_index].name = name;
     runtime.statics_map[runtime.max_statics_map_index].access_flags = info->access_flags;
     runtime.statics_map[runtime.max_statics_map_index].attributes_count = info->attributes_count;
@@ -155,6 +155,7 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
         runtime.max_statics_table_offset += 4;
     }
 
+    AttributeInfo *attr;
     switch (*type) { //type
         case 'Z':
         case 'B':
@@ -177,14 +178,17 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
             break;
         }
         case '(': //method,
-            AttributeInfo *attr = info->attributes;
+            attr = info->attributes;
             for (int i = 0; i < info->attributes_count; i++) {
                 if (strcmp(get_constant_pool_entry_name(class, attr->attribute_name_index), "Code") == 0) {
                     break;
                 }
                 attr++;
             }
-            memcpy(entry, &attr->info[0], 4);
+
+            unsigned char * bytecode = calloc(1, attr->attribute_length);
+            memcpy(bytecode, attr->info, attr->attribute_length);
+            memcpy(entry, &bytecode, WORD_SIZE);
             if (strcmp(name, "<init>") == 0) {
                 runtime.statics_map[runtime.max_statics_map_index].type = MAP_TYPE_SIM;
             } else {
@@ -197,7 +201,7 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
 }
 
 /// Go to static table and find method by full name (Class.name) and signature
-char * find_static_method(char *name, char *signature, unsigned short access_flags) {
+unsigned char * find_static_method(char *name, char *signature, unsigned short access_flags) {
     unsigned int offset;
     for (unsigned int i = 0; i < runtime.max_statics_map_index; i++) {
         if (
@@ -206,7 +210,6 @@ char * find_static_method(char *name, char *signature, unsigned short access_fla
                 && (strcmp(runtime.statics_map[i].name, name) == 0)
                 && (strcmp(runtime.statics_map[i].descriptor, signature) == 0)
                 ) {
-            // TODO: check method signature
             offset  = runtime.statics_map[i].offset;
             break;
         }
@@ -269,7 +272,10 @@ void add_instance_entry(JavaClass *class, MFInfo *info) {
                 }
                 attr++;
             }
-            memcpy(entry, &attr->info[0], 4);
+
+            unsigned char * bytecode = calloc(1, attr->attribute_length);
+            memcpy(bytecode, attr->info, attr->attribute_length);
+            memcpy(entry, &bytecode, WORD_SIZE);
             if (strcmp(name, "<init>") == 0) {
                 class->class_map[class->max_class_map_index].type = MAP_TYPE_SIM;
             } else {
