@@ -34,7 +34,7 @@ void finalize_frame(Frame *frame) {
 void execute_frame(Frame *frame) {
     unsigned char op;
     unsigned int stack_pointer = 0;
-    while (frame->instruction_pointer < frame->bytecode_length) {
+    while (1) {
         op = frame->bytecode[frame->instruction_pointer];
         switch (op) {
             case 0x00:
