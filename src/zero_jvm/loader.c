@@ -1,38 +1,37 @@
-
 #include "loader.h"
 
-unsigned char filebytebuffer[8];
+uint8_t filebytebuffer[8];
 FILE *filepointer;
 
 void loadfile(const char *classname) {
     filepointer = fopen(classname, "rb");
 }
 
-static unsigned char read_uint8() {
+static uint8_t read_uint8() {
     fread(filebytebuffer, 1, 1, filepointer);
     return filebytebuffer[0];
 }
 
-static unsigned short read_uint16() {
+static uint16_t read_uint16() {
     fread(filebytebuffer, 2, 1, filepointer);
-    return (unsigned short) filebytebuffer[0] << 8 | (unsigned short) filebytebuffer[1];
+    return (uint16_t) filebytebuffer[0] << 8 | (uint16_t) filebytebuffer[1];
 }
 
-static unsigned int read_uint32() {
+static uint32_t read_uint32() {
     fread(filebytebuffer, 4, 1, filepointer);
-    return (unsigned int) filebytebuffer[0] << 24 | (unsigned int) filebytebuffer[1] << 16 |
-           (unsigned int) filebytebuffer[2] << 8 | (unsigned int) filebytebuffer[3];
+    return (uint32_t) filebytebuffer[0] << 24 | (uint32_t) filebytebuffer[1] << 16 |
+           (uint32_t) filebytebuffer[2] << 8 | (uint32_t) filebytebuffer[3];
 }
 
-__attribute__((unused)) static unsigned long read_uint64() {
+__attribute__((unused)) static uint64_t read_uint64() {
     fread(filebytebuffer, 8, 1, filepointer);
-    return (unsigned long) filebytebuffer[0] << 56 | (unsigned long) filebytebuffer[1] << 48 |
-           (unsigned long) filebytebuffer[2] << 40 | (unsigned long) filebytebuffer[3] << 32 |
-           (unsigned long) filebytebuffer[4] << 24 | (unsigned long) filebytebuffer[5] << 16 |
-           (unsigned long) filebytebuffer[6] << 8 | (unsigned long) filebytebuffer[7];
+    return (uint64_t) filebytebuffer[0] << 56 | (uint64_t) filebytebuffer[1] << 48 |
+           (uint64_t) filebytebuffer[2] << 40 | (uint64_t) filebytebuffer[3] << 32 |
+           (uint64_t) filebytebuffer[4] << 24 | (uint64_t) filebytebuffer[5] << 16 |
+           (uint64_t) filebytebuffer[6] << 8 | (uint64_t) filebytebuffer[7];
 }
 
-ConstantPoolEntry read_constant_pool_entry(unsigned char tag) {
+ConstantPoolEntry read_constant_pool_entry(uint8_t tag) {
     ConstantPoolEntry entry;
     entry.tag = tag;
     switch (entry.tag) {
@@ -40,7 +39,7 @@ ConstantPoolEntry read_constant_pool_entry(unsigned char tag) {
             // utf8
             entry.data.ushort = read_uint16();
             entry.addon = calloc(entry.data.ushort, 1);
-            for (unsigned short i = 0; i < entry.data.ushort; i++) {
+            for (uint16_t i = 0; i < entry.data.ushort; i++) {
                 entry.addon[i] = read_uint8();
             }
             break;
@@ -54,7 +53,7 @@ ConstantPoolEntry read_constant_pool_entry(unsigned char tag) {
             // long
         case 6:
             // double
-            entry.data.ulong = (((unsigned long) read_uint32()) << 32) + read_uint32();
+            entry.data.ulong = (((uint64_t) read_uint32()) << 32) + read_uint32();
             break;
         case 7:
             // class
@@ -68,7 +67,7 @@ ConstantPoolEntry read_constant_pool_entry(unsigned char tag) {
             // methodref
         case 12:
             // name and type
-            entry.data.uint = ((int) read_uint16()) << 16;  // read first 2 bytes
+            entry.data.uint = ((uint32_t) read_uint16()) << 16;  // read first 2 bytes
             entry.data.uint |= read_uint16();  // read second 2 bytes
             break;
         case 16:
@@ -88,7 +87,7 @@ MFInfo read_meth_field_info() {
     info.descriptor_index = read_uint16();
     info.attributes_count = read_uint16();
     info.attributes = calloc(info.attributes_count, sizeof(AttributeInfo));
-    for (unsigned short i = 0; i < info.attributes_count; i++) {
+    for (uint16_t i = 0; i < info.attributes_count; i++) {
         info.attributes[i] = read_attribute_info();
     }
     return info;
@@ -99,19 +98,18 @@ AttributeInfo read_attribute_info() {
     attribute.attribute_name_index = read_uint16();
     attribute.attribute_length = read_uint32();
     attribute.info = calloc(attribute.attribute_length, 1);
-    for (unsigned int i = 0; i < attribute.attribute_length; i++) {
+    for (uint32_t i = 0; i < attribute.attribute_length; i++) {
         attribute.info[i] = read_uint8();
     }
     return attribute;
 }
 
-char *get_constant_pool_entry_name(JavaClass *class, int index) {
+char *get_constant_pool_entry_name(JavaClass *class, uint32_t index) {
     ConstantPoolEntry *entry = &class->constant_pool[index];
     while (entry->tag != 1) {
         entry = &class->constant_pool[entry->data.ushort];
     }
     return (char *) entry->addon;
-
 }
 
 
@@ -140,13 +138,14 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
     char *type = get_constant_pool_entry_name(class, info->descriptor_index);
 
     runtime.statics_map[runtime.max_statics_map_index].offset = runtime.max_statics_table_offset;
-    unsigned char *entry = runtime.statics_table + runtime.max_statics_table_offset;
+    uint8_t *entry = runtime.statics_table + runtime.max_statics_table_offset;
     runtime.statics_map[runtime.max_statics_map_index].name = name;
     runtime.statics_map[runtime.max_statics_map_index].access_flags = info->access_flags;
     runtime.statics_map[runtime.max_statics_map_index].attributes_count = info->attributes_count;
     runtime.statics_map[runtime.max_statics_map_index].attributes = info->attributes;
     runtime.statics_map[runtime.max_statics_map_index].descriptor_index = info->descriptor_index;
-    runtime.statics_map[runtime.max_statics_map_index].descriptor = get_constant_pool_entry_name(class, info->descriptor_index);
+    runtime.statics_map[runtime.max_statics_map_index].descriptor = get_constant_pool_entry_name(class,
+                                                                                                 info->descriptor_index);
 
     if ((strcmp(type, "J") == 0) ||
         (strcmp(type, "D") == 0)) {  //if long/double
@@ -164,7 +163,7 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
         case 'C':
         case 'I': //int, float
         {
-            unsigned int *tmp4 = (unsigned int *) entry;
+            uint32_t *tmp4 = (uint32_t *) entry;
             *tmp4 = 0;
             runtime.statics_map[runtime.max_statics_map_index].type = MAP_TYPE_SF;
             break;
@@ -172,7 +171,7 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
         case 'J':
         case 'D': //long double
         {
-            unsigned long *tmp8 = (unsigned long *) entry;
+            uint64_t *tmp8 = (uint64_t *) entry;
             *tmp8 = 0;
             runtime.statics_map[runtime.max_statics_map_index].type = MAP_TYPE_SF;
             break;
@@ -186,7 +185,7 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
                 attr++;
             }
 
-            unsigned char * bytecode = calloc(1, attr->attribute_length);
+            uint8_t *bytecode = calloc(1, attr->attribute_length);
             memcpy(bytecode, attr->info, attr->attribute_length);
             memcpy(entry, &bytecode, WORD_SIZE);
             if (strcmp(name, "<init>") == 0) {
@@ -201,20 +200,20 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
 }
 
 /// Go to static table and find method by full name (Class.name) and signature
-unsigned char * find_static_method(char *name, char *signature, unsigned short access_flags) {
-    unsigned int offset;
-    for (unsigned int i = 0; i < runtime.max_statics_map_index; i++) {
+uint8_t ** find_static_method(char *name, char *signature, uint16_t access_flags) {
+    uint32_t offset;
+    for (uint32_t i = 0; i < runtime.max_statics_map_index; i++) {
         if (
                 (runtime.statics_map[i].type == MAP_TYPE_SM)
                 && ((runtime.statics_map[i].access_flags & access_flags) == access_flags)
                 && (strcmp(runtime.statics_map[i].name, name) == 0)
                 && (strcmp(runtime.statics_map[i].descriptor, signature) == 0)
                 ) {
-            offset  = runtime.statics_map[i].offset;
+            offset = runtime.statics_map[i].offset;
             break;
         }
     }
-    return runtime.statics_table+offset;
+    return (uint8_t **) (runtime.statics_table + offset);
 }
 
 
@@ -222,15 +221,16 @@ void add_instance_entry(JavaClass *class, MFInfo *info) {
 
     char *name = get_constant_pool_entry_name(class, info->name_index);
     char *type = get_constant_pool_entry_name(class, info->descriptor_index);
-    char *entry = class->class_rep + class->max_class_rep_offset;
-    char *object_entry = class->object_instance_template + class->max_class_field_offset;
+    uint8_t *entry = class->class_rep + class->max_class_rep_offset;
+    uint8_t *object_entry = class->object_instance_template + class->max_class_field_offset;
 
     class->class_map[class->max_class_map_index].name = name;
     class->class_map[class->max_class_map_index].access_flags = info->access_flags;
     class->class_map[class->max_class_map_index].attributes_count = info->attributes_count;
     class->class_map[class->max_class_map_index].attributes = info->attributes;
     class->class_map[class->max_class_map_index].descriptor_index = info->descriptor_index;
-    class->class_map[class->max_class_map_index].descriptor = get_constant_pool_entry_name(class, info->descriptor_index);
+    class->class_map[class->max_class_map_index].descriptor = get_constant_pool_entry_name(class,
+                                                                                           info->descriptor_index);
 
 
     switch (*type) { //type
@@ -241,7 +241,7 @@ void add_instance_entry(JavaClass *class, MFInfo *info) {
         case 'C':
         case 'I': //int, float
         {
-            unsigned int *tmp4 = (unsigned int *) object_entry;
+            uint32_t *tmp4 = (uint32_t *) object_entry;
             *tmp4 = 0;
 
             class->class_map[class->max_class_map_index].offset = class->max_class_field_offset;
@@ -253,7 +253,7 @@ void add_instance_entry(JavaClass *class, MFInfo *info) {
         case 'J':
         case 'D': //long double
         {
-            unsigned long *tmp8 = (unsigned long *) object_entry;
+            uint64_t *tmp8 = (uint64_t *) object_entry;
             *tmp8 = 0;
 
             class->class_map[class->max_class_map_index].offset = class->max_class_field_offset;
@@ -273,7 +273,7 @@ void add_instance_entry(JavaClass *class, MFInfo *info) {
                 attr++;
             }
 
-            unsigned char * bytecode = calloc(1, attr->attribute_length);
+            uint8_t *bytecode = calloc(1, attr->attribute_length);
             memcpy(bytecode, attr->info, attr->attribute_length);
             memcpy(entry, &bytecode, WORD_SIZE);
             if (strcmp(name, "<init>") == 0) {
@@ -303,8 +303,8 @@ JavaClass read_class(char *classname) {
 
     class.constant_pool_size = read_uint16();
     class.constant_pool = calloc(class.constant_pool_size, sizeof(ConstantPoolEntry));
-    for (unsigned short i = 1; i < class.constant_pool_size; i++) {
-        unsigned char tag = read_uint8();
+    for (uint16_t i = 1; i < class.constant_pool_size; i++) {
+        uint8_t tag = read_uint8();
         class.constant_pool[i] = read_constant_pool_entry(tag);
         if (tag == 5 || tag == 6) {
             i++;  // 8-byte constants like double or long
@@ -315,7 +315,7 @@ JavaClass read_class(char *classname) {
     class.access_flags = read_uint16();
     class.this = read_uint16();
     class.super = read_uint16();
-    unsigned short interface_count = read_uint16(); // should be always 0
+    uint16_t interface_count = read_uint16(); // should be always 0
     if (interface_count > 0) {
         // panic
         exit(1);
@@ -328,10 +328,8 @@ JavaClass read_class(char *classname) {
 
     class.object_instance_template = calloc(class.field_count * 2, WORD_SIZE); // see any other * 2 explanation
 
-    for (unsigned short i = 0; i < class.field_count; ++i) {
+    for (uint16_t i = 0; i < class.field_count; ++i) {
         MFInfo current_field = read_meth_field_info();
-        char *name = get_constant_pool_entry_name(&class, current_field.name_index);
-        char *type = get_constant_pool_entry_name(&class, current_field.descriptor_index);
         if (current_field.access_flags & ACC_STATIC) {
             add_statics_entry(&class, &current_field);
         } else {
@@ -344,17 +342,16 @@ JavaClass read_class(char *classname) {
 
     class.class_rep = calloc(class.method_count, WORD_SIZE);
     // Because we copy class red address, that callocs only here. 
-    unsigned int *header = (unsigned int *) class.object_instance_template;
+    uint32_t *header = (uint32_t *) class.object_instance_template;
     memcpy(header, &class.class_rep, WORD_SIZE);
     header++;
-    unsigned int tmp = 100;
+    uint32_t tmp = 100;
     memcpy(header, &tmp, WORD_SIZE);
     //*header = the rest of header;
 
-    for (unsigned short i = 0; i < class.method_count; ++i) {
+    for (uint16_t i = 0; i < class.method_count; ++i) {
         MFInfo current_method = read_meth_field_info();
         char *name = get_constant_pool_entry_name(&class, current_method.name_index);
-        char *type = get_constant_pool_entry_name(&class, current_method.descriptor_index);
         if (strcmp(name, "<clinit>") == 0) {
             //TODO: "Just call me, I am always last"
         } else if ((current_method.access_flags & ACC_STATIC) ||
@@ -396,7 +393,7 @@ JavaClass read_class(char *classname) {
 
     class.attribute_count = read_uint16();
     class.attributes = calloc(class.attribute_count, sizeof(AttributeInfo));
-    for (unsigned short i = 0; i < class.attribute_count; ++i) {
+    for (uint16_t i = 0; i < class.attribute_count; ++i) {
         class.attributes[i] = read_attribute_info();
     }
 

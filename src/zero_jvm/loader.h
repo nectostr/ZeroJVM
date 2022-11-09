@@ -3,77 +3,78 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include "constants.h"
 #include "runtime.h"
 
 
 union ConstantPoolType {
-    unsigned short ushort;
-    unsigned int uint;
-    unsigned long ulong;
+    uint16_t ushort;
+    uint32_t uint;
+    uint64_t ulong;
 };
 
 typedef struct {
-    unsigned char tag;
+    uint8_t tag;
     union ConstantPoolType data;
-    unsigned char *addon;
+    uint8_t *addon;
 } ConstantPoolEntry;
 
 typedef struct {
-    unsigned short access_flags;
-    unsigned short name_index;
-    unsigned short descriptor_index;
-    unsigned short attributes_count;
+    uint16_t access_flags;
+    uint16_t name_index;
+    uint16_t descriptor_index;
+    uint16_t attributes_count;
     AttributeInfo *attributes;
 } MFInfo;
 
 
 typedef struct {
-    unsigned short constant_pool_size;
+    uint16_t constant_pool_size;
     ConstantPoolEntry *constant_pool;
-    unsigned short this;  // look in the constant pool
-    unsigned short super;  // look in the constant pool
-    unsigned short access_flags;
-    unsigned short field_count;
-    unsigned short method_count;
-    unsigned short attribute_count;
+    uint16_t this;  // look in the constant pool
+    uint16_t super;  // look in the constant pool
+    uint16_t access_flags;
+    uint16_t field_count;
+    uint16_t method_count;
+    uint16_t attribute_count;
     AttributeInfo *attributes;
     
 
     // They also are in statics table, btw
     MapEntry *class_map;
-    unsigned int max_class_map_index;;
-    char *class_rep;
-    unsigned int max_class_rep_offset;
-    unsigned int max_class_field_offset;
+    uint32_t max_class_map_index;;
+    uint8_t *class_rep;
+    uint32_t max_class_rep_offset;
+    uint32_t max_class_field_offset;
 
-    char* object_instance_template;
+    uint8_t * object_instance_template;
 } JavaClass;
 
-extern unsigned char filebytebuffer[8];
+extern uint8_t filebytebuffer[8];
 extern FILE *filepointer;
 
 void loadfile(const char *classname);
 
-static unsigned char read_uint8();
+static uint8_t read_uint8();
 
-static unsigned short read_uint16();
+static uint16_t read_uint16();
 
-static unsigned int read_uint32();
+static uint32_t read_uint32();
 
-__attribute__((unused)) static unsigned long read_uint64();
+__attribute__((unused)) static uint64_t read_uint64();
 
-ConstantPoolEntry read_constant_pool_entry(unsigned char tag);
+ConstantPoolEntry read_constant_pool_entry(uint8_t tag);
 
 MFInfo read_meth_field_info();
 
 AttributeInfo read_attribute_info();
 
-char *get_constant_pool_entry_name(JavaClass *class, int index);
+char *get_constant_pool_entry_name(JavaClass *class, uint32_t index);
 
 void add_statics_entry(JavaClass *class, MFInfo *info);
 
-unsigned char * find_static_method(char *name, char *signature, unsigned short access_flags);
+uint8_t ** find_static_method(char *name, char *signature, uint16_t access_flags);
 
 void add_instance_entry(JavaClass *class, MFInfo *info);
 

@@ -7,5 +7,5 @@ void init_runtime() {
     runtime.statics_map = calloc(STATICS_MAP_SIZE, sizeof(MapEntry));
 
     runtime.max_statics_table_offset = 0;
-    runtime.statics_table = calloc(STATICS_TABLE_SIZE, sizeof(char));
+    runtime.statics_table = calloc(STATICS_TABLE_SIZE, sizeof(uint8_t));
 }

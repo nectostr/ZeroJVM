@@ -1,18 +1,18 @@
 #include "frame.h"
 
-Frame initialize_frame(JavaClass *current_class, unsigned char *bytecode) {
+Frame initialize_frame(JavaClass *current_class, uint8_t *bytecode) {
     Frame frame;
     frame.current_class = current_class;
     frame.bytecode = bytecode;
 
-    unsigned short maxstack = (unsigned short) bytecode[0] << 8 | (unsigned short) bytecode[1];
-    frame.stack = calloc(maxstack, sizeof(unsigned int));
+    uint16_t maxstack = (uint16_t) bytecode[0] << 8 | (uint16_t) bytecode[1];
+    frame.stack = calloc(maxstack, sizeof(uint32_t));
 
-    unsigned short maxlocals = (unsigned short) bytecode[2] << 8 | (unsigned short) bytecode[3];
-    frame.locals = calloc(maxlocals, sizeof(unsigned int));
+    uint16_t maxlocals = (uint16_t) bytecode[2] << 8 | (uint16_t) bytecode[3];
+    frame.locals = calloc(maxlocals, sizeof(uint32_t));
 
-    frame.bytecode_length = (unsigned int) bytecode[4] << 24 | (unsigned int) bytecode[5] << 16 |
-                            (unsigned int) bytecode[6] << 8  | (unsigned int) bytecode[7];
+    frame.bytecode_length = (uint32_t) bytecode[4] << 24 | (uint32_t) bytecode[5] << 16 |
+                            (uint32_t) bytecode[6] << 8 | (uint32_t) bytecode[7];
     frame.instruction_pointer = 8;
 
     // TODO: copy params to locals from somewhere?
@@ -32,8 +32,8 @@ void finalize_frame(Frame *frame) {
 }
 
 void execute_frame(Frame *frame) {
-    unsigned char op;
-    unsigned int stack_pointer = 0;
+    uint8_t op;
+    uint16_t stack_pointer = 0;
     while (1) {
         op = frame->bytecode[frame->instruction_pointer];
         switch (op) {

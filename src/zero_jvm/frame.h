@@ -4,14 +4,14 @@
 
 typedef struct {
     JavaClass *current_class;
-    unsigned int instruction_pointer;
-    unsigned int bytecode_length;
-    unsigned char *bytecode;
-    unsigned int *locals;
-    unsigned int *stack;
+    uint32_t instruction_pointer;
+    uint32_t bytecode_length;
+    uint8_t *bytecode;
+    uint32_t *locals;
+    uint32_t *stack;
 } Frame;
 
-Frame initialize_frame(JavaClass *current_class, unsigned char *bytecode);
+Frame initialize_frame(JavaClass *current_class, uint8_t *bytecode);
 
 void finalize_frame(Frame *frame);
 

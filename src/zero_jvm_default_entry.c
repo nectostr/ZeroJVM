@@ -17,8 +17,7 @@ int32_t main(int argc, char** argv) {
     debug_print_obj_tmpl(&entrypoint);
 
     // find public static void main(String[] args) and run
-    unsigned char * tmain = find_static_method("main", "([Ljava/lang/String;)V", 0x0001 | 0x0008);
-    unsigned char ** main = (unsigned char **) tmain;
+    uint8_t ** main = find_static_method("main", "([Ljava/lang/String;)V", 0x0001 | 0x0008);
     Frame frame = initialize_frame(&entrypoint, *main);
     execute_frame(&frame);
     finalize_frame(&frame);
