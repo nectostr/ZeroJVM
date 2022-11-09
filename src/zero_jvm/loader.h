@@ -17,7 +17,7 @@ union ConstantPoolType {
 typedef struct {
     uint8_t tag;
     union ConstantPoolType data;
-    uint8_t *addon;
+    char *addon;
 } ConstantPoolEntry;
 
 typedef struct {

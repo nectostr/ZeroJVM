@@ -137,9 +137,18 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
     char *name = get_constant_pool_entry_name(class, info->name_index);
     char *type = get_constant_pool_entry_name(class, info->descriptor_index);
 
+    uint16_t class_index = class->constant_pool[class->this].data.ushort;
+    char * classname = class->constant_pool[class_index].addon;
+
+    unsigned long fullmethodnamelen = strlen(classname) + strlen(name) + 2;
+    char * fullname = calloc(fullmethodnamelen, sizeof(char));
+    strcpy(fullname, classname);
+    fullname[strlen(classname)] = '.';
+    strcpy(&fullname[strlen(classname)+1], name);
+
     runtime.statics_map[runtime.max_statics_map_index].offset = runtime.max_statics_table_offset;
     uint8_t *entry = runtime.statics_table + runtime.max_statics_table_offset;
-    runtime.statics_map[runtime.max_statics_map_index].name = name;
+    runtime.statics_map[runtime.max_statics_map_index].name = fullname;
     runtime.statics_map[runtime.max_statics_map_index].access_flags = info->access_flags;
     runtime.statics_map[runtime.max_statics_map_index].attributes_count = info->attributes_count;
     runtime.statics_map[runtime.max_statics_map_index].attributes = info->attributes;
@@ -205,7 +214,6 @@ uint8_t ** find_static_method(char *name, char *signature, uint16_t access_flags
     for (uint32_t i = 0; i < runtime.max_statics_map_index; i++) {
         if (
                 (runtime.statics_map[i].type == MAP_TYPE_SM)
-                && ((runtime.statics_map[i].access_flags & access_flags) == access_flags)
                 && (strcmp(runtime.statics_map[i].name, name) == 0)
                 && (strcmp(runtime.statics_map[i].descriptor, signature) == 0)
                 ) {

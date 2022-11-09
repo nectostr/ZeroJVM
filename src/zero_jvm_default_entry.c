@@ -3,7 +3,7 @@
 #include "zero_jvm/runtime.h"
 #include "zero_jvm/frame.h"
 
-#define FILENAME "entrypoint.class"
+#define FILENAME "Simple.class"
 
 int32_t main(int argc, char** argv) {
     init_runtime();
@@ -17,9 +17,8 @@ int32_t main(int argc, char** argv) {
     debug_print_obj_tmpl(&entrypoint);
 
     // find public static void main(String[] args) and run
-    uint8_t ** main = find_static_method("main", "([Ljava/lang/String;)V", 0x0001 | 0x0008);
-    Frame frame = initialize_frame(&entrypoint, *main);
+    uint8_t ** main = find_static_method("Simple.main", "([Ljava/lang/String;)V", 0x0001 | 0x0008);
+    Frame frame = initialize_frame(&entrypoint, *main, 0, NULL);
     execute_frame(&frame);
-    finalize_frame(&frame);
     return 0;
 }

@@ -11,7 +11,7 @@ typedef struct {
     uint32_t *stack;
 } Frame;
 
-Frame initialize_frame(JavaClass *current_class, uint8_t *bytecode);
+Frame initialize_frame(JavaClass *current_class, uint8_t *bytecode, uint16_t params_words, uint32_t * params);
 
 void finalize_frame(Frame *frame);
 

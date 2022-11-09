@@ -1,6 +1,50 @@
 #include "frame.h"
 
-Frame initialize_frame(JavaClass *current_class, uint8_t *bytecode) {
+uint32_t *descriptor2params(const char *descriptor, uint32_t *current_stack, uint16_t current_stack_pointer) {
+    uint8_t flag = 1;  // 0 - stop, 1 - outside of object name, 2 - inside of object name
+    uint32_t words = 0;
+    while (flag) {
+        if (flag == 1) {
+            switch (*descriptor) {
+                case 'L':
+                    words++;
+                    flag = 2;
+                    break;
+                case ';':
+                    flag = 1;
+                    break;
+                case ')':
+                    flag = 0;
+                    break;
+                case 'Z':
+                case 'B':
+                case 'S':
+                case 'F':
+                case 'C':
+                case 'I':
+                    words++;
+                    break;
+                case 'J':
+                case 'D':
+                    words += 2;
+                    break;
+                default:
+                    break;
+            }
+            descriptor++;
+        }
+    }
+
+    uint32_t *params = calloc(words + 1, sizeof(uint32_t));
+    params[0] = words;
+    for (int i = 0; i < words; i++) {
+        memcpy(&params[words - i], &current_stack[current_stack_pointer - i - 1], WORD_SIZE);
+    }
+
+    return params;
+}
+
+Frame initialize_frame(JavaClass *current_class, uint8_t *bytecode, uint16_t params_words, uint32_t *params) {
     Frame frame;
     frame.current_class = current_class;
     frame.bytecode = bytecode;
@@ -10,16 +54,136 @@ Frame initialize_frame(JavaClass *current_class, uint8_t *bytecode) {
 
     uint16_t maxlocals = (uint16_t) bytecode[2] << 8 | (uint16_t) bytecode[3];
     frame.locals = calloc(maxlocals, sizeof(uint32_t));
+    memcpy(frame.locals, params, params_words * WORD_SIZE);
 
     frame.bytecode_length = (uint32_t) bytecode[4] << 24 | (uint32_t) bytecode[5] << 16 |
                             (uint32_t) bytecode[6] << 8 | (uint32_t) bytecode[7];
     frame.instruction_pointer = 8;
-
-    // TODO: copy params to locals from somewhere?
     return frame;
 }
 
-void finalize_frame(Frame *frame) {
+void execute_frame(Frame *frame) {
+    uint8_t op;
+    uint16_t stack_pointer = 0;
+    while (1) {
+        op = frame->bytecode[frame->instruction_pointer];
+        switch (op) {
+            case 0xa7: {  // goto
+                frame->instruction_pointer += 2;
+                int16_t offset = frame->bytecode[frame->instruction_pointer - 1] << 8;
+                offset |= frame->bytecode[frame->instruction_pointer];
+                frame->instruction_pointer += offset;
+                break;
+            }
+            case 0x02: {
+                int val = -1;
+                memcpy(&frame->stack[stack_pointer++], &val, 4);
+                break;
+            }
+            case 0x03: {
+                int val = 0;
+                memcpy(&frame->stack[stack_pointer++], &val, 4);
+                break;
+            }
+            case 0x04: {
+                int val = 1;
+                memcpy(&frame->stack[stack_pointer++], &val, 4);
+                break;
+            }
+            case 0x05: {
+                int val = 2;
+                memcpy(&frame->stack[stack_pointer++], &val, 4);
+                break;
+            }
+            case 0x06: {
+                int val = 3;
+                memcpy(&frame->stack[stack_pointer++], &val, 4);
+                break;
+            }
+            case 0x07: {
+                int val = 4;
+                memcpy(&frame->stack[stack_pointer++], &val, 4);
+                break;
+            }
+            case 0x08: {
+                int val = 5;
+                memcpy(&frame->stack[stack_pointer++], &val, 4);
+                break;
+            }
+            case 0x60: {
+                int val1 = 0;
+                int val2 = 0;
+                memcpy(&val1, &frame->stack[stack_pointer - 1], 4);
+                memcpy(&val2, &frame->stack[stack_pointer - 2], 4);
+                val1 = val1 + val2;
+                memcpy(&frame->stack[stack_pointer - 2], &val1, 4);
+                stack_pointer--;
+                break;
+            }
+            case 0x3b:
+                memcpy(&frame->locals[0], &frame->stack[--stack_pointer], 4);
+                break;
+            case 0x3c:
+                memcpy(&frame->locals[1], &frame->stack[--stack_pointer], 4);
+                break;
+            case 0x3d:
+                memcpy(&frame->locals[2], &frame->stack[--stack_pointer], 4);
+                break;
+            case 0x3e:
+                memcpy(&frame->locals[3], &frame->stack[--stack_pointer], 4);
+                break;
+            case 0x1a:
+                memcpy(&frame->stack[stack_pointer++], &frame->locals[0], 4);
+                break;
+            case 0x1b:
+                memcpy(&frame->stack[stack_pointer++], &frame->locals[1], 4);
+                break;
+            case 0x1c:
+                memcpy(&frame->stack[stack_pointer++], &frame->locals[2], 4);
+                break;
+            case 0x1d:
+                memcpy(&frame->stack[stack_pointer++], &frame->locals[3], 4);
+                break;
+            case 0xb8:  // invokestatic
+            {
+                frame->instruction_pointer += 2;
+                uint16_t index = ((uint16_t) frame->bytecode[frame->instruction_pointer - 1] << 8) |
+                                 frame->bytecode[frame->instruction_pointer];
+                ConstantPoolEntry *data = &frame->current_class->constant_pool[index];
+                short value[2];
+                memcpy(&value, &data->data, 4);
+
+                uint16_t name_and_type_index = value[0];
+                uint16_t class_index = value[1];
+
+                memcpy(&value, &frame->current_class->constant_pool[name_and_type_index].data.uint, 4);
+                char *descriptor = frame->current_class->constant_pool[value[0]].addon;
+                char *method_name = frame->current_class->constant_pool[value[1]].addon;
+
+                class_index = frame->current_class->constant_pool[class_index].data.ushort;
+                char *classname = frame->current_class->constant_pool[class_index].addon;
+
+                unsigned long fullmethodnamelen = strlen(classname) + strlen(method_name) + 2;
+                char *fullname = calloc(fullmethodnamelen, sizeof(char));
+                strcpy(fullname, classname);
+                fullname[strlen(classname)] = '.';
+                strcpy(&fullname[strlen(classname) + 1], method_name);
+
+                uint8_t **new_method_code = find_static_method(fullname, descriptor, 0);
+
+                uint32_t *params = descriptor2params(descriptor, frame->stack, stack_pointer);
+
+                // TODO: fix current class to proper class of callee
+                Frame new_frame = initialize_frame(frame->current_class, *new_method_code, params[0], &params[1]);
+                execute_frame(&new_frame);
+                break;
+            }
+            default:
+                break;
+        }
+        frame->instruction_pointer++;
+    }
+
     if (frame->instruction_pointer != frame->bytecode_length) {
         printf(
                 "Frame pointer != frame bytecode length in the end of frame execution: %ui != %ui",
@@ -29,21 +193,6 @@ void finalize_frame(Frame *frame) {
     }
     free(frame->stack);
     free(frame->locals);
-}
 
-void execute_frame(Frame *frame) {
-    uint8_t op;
-    uint16_t stack_pointer = 0;
-    while (1) {
-        op = frame->bytecode[frame->instruction_pointer];
-        switch (op) {
-            case 0x00:
-                break;
-            case 0x01:
-                break;
-            default:
-                break;
-        }
-        frame->instruction_pointer++;
-    }
+    // TODO: return result
 }
