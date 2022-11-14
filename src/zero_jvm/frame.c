@@ -62,10 +62,11 @@ Frame initialize_frame(JavaClass *current_class, uint8_t *bytecode, uint16_t par
     return frame;
 }
 
-void execute_frame(Frame *frame) {
+uint32_t * execute_frame(Frame *frame) {
     uint8_t op;
     uint16_t stack_pointer = 0;
-    while (1) {
+    uint32_t * result_pointer = NULL;
+    while (result_pointer == NULL) {
         op = frame->bytecode[frame->instruction_pointer];
         switch (op) {
             case 0xa7: {  // goto
@@ -175,8 +176,33 @@ void execute_frame(Frame *frame) {
 
                 // TODO: fix current class to proper class of callee
                 Frame new_frame = initialize_frame(frame->current_class, *new_method_code, params[0], &params[1]);
-                execute_frame(&new_frame);
+                uint32_t * result = execute_frame(&new_frame);
+                //execute_frame(&new_frame);
+                // Put the return value on the stack from frame
+                //check if result should be one or two words
+                memcpy(result, &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
+            }
+            case 0xba:  // invokedynamic
+            {
+
+            }
+            case 0xac: //ireturn
+            {
+             // make sure stack clean?   
+                result_pointer = calloc(1, sizeof(WORD_SIZE));
+                memcpy(&result_pointer, &frame->stack[--stack_pointer], WORD_SIZE);
+                
+            }
+            case 0xb1: //return
+            {
+                result_pointer = calloc(1, sizeof(WORD_SIZE));
+            }
+            case 0xad://lreturn 
+            {
+                result_pointer = calloc(1, sizeof(WORD_SIZE));
+                memcpy(&result_pointer, &frame->stack[--stack_pointer], 2*WORD_SIZE);
+                
             }
             default:
                 break;
@@ -194,5 +220,5 @@ void execute_frame(Frame *frame) {
     free(frame->stack);
     free(frame->locals);
 
-    // TODO: return result
+    return result_pointer;
 }

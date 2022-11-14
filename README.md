@@ -11,6 +11,7 @@ This is a CS263 course project repository with implementation of simple JVM desi
 ### Libs that you might find useful to install
 1. gcc-arm-none-eabi
 2. libstdc++-arm-none-eabi-newlib
+3. gcc-multilib
 
 ## TODO list:
 1. Make sure code compiles on target VM's and devices

@@ -15,4 +15,4 @@ Frame initialize_frame(JavaClass *current_class, uint8_t *bytecode, uint16_t par
 
 void finalize_frame(Frame *frame);
 
-void execute_frame(Frame *frame);
+uint32_t * execute_frame(Frame *frame);
