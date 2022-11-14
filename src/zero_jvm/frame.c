@@ -181,28 +181,30 @@ uint32_t * execute_frame(Frame *frame) {
                 // Put the return value on the stack from frame
                 //check if result should be one or two words
                 memcpy(result, &frame->stack[--stack_pointer], WORD_SIZE);
+                free(result);
                 break;
             }
             case 0xba:  // invokedynamic
             {
-
+                break;
             }
             case 0xac: //ireturn
             {
              // make sure stack clean?   
                 result_pointer = calloc(1, sizeof(WORD_SIZE));
-                memcpy(&result_pointer, &frame->stack[--stack_pointer], WORD_SIZE);
-                
+                memcpy(result_pointer, &frame->stack[--stack_pointer], WORD_SIZE);
+                break;
             }
             case 0xb1: //return
             {
                 result_pointer = calloc(1, sizeof(WORD_SIZE));
+                break;
             }
             case 0xad://lreturn 
             {
                 result_pointer = calloc(1, sizeof(WORD_SIZE));
-                memcpy(&result_pointer, &frame->stack[--stack_pointer], 2*WORD_SIZE);
-                
+                memcpy(result_pointer, &frame->stack[--stack_pointer], 2*WORD_SIZE);
+                break;                
             }
             default:
                 break;
