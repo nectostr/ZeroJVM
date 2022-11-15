@@ -78,73 +78,134 @@ uint32_t * execute_frame(Frame *frame) {
             }
             case 0x02: {
                 int val = -1;
-                memcpy(&frame->stack[stack_pointer++], &val, 4);
+                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
                 break;
             }
             case 0x03: {
                 int val = 0;
-                memcpy(&frame->stack[stack_pointer++], &val, 4);
+                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
                 break;
             }
             case 0x04: {
                 int val = 1;
-                memcpy(&frame->stack[stack_pointer++], &val, 4);
+                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
                 break;
             }
             case 0x05: {
                 int val = 2;
-                memcpy(&frame->stack[stack_pointer++], &val, 4);
+                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
                 break;
             }
             case 0x06: {
                 int val = 3;
-                memcpy(&frame->stack[stack_pointer++], &val, 4);
+                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
                 break;
             }
             case 0x07: {
                 int val = 4;
-                memcpy(&frame->stack[stack_pointer++], &val, 4);
+                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
                 break;
             }
             case 0x08: {
                 int val = 5;
-                memcpy(&frame->stack[stack_pointer++], &val, 4);
+                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
                 break;
             }
             case 0x60: {
                 int val1 = 0;
                 int val2 = 0;
-                memcpy(&val1, &frame->stack[stack_pointer - 1], 4);
-                memcpy(&val2, &frame->stack[stack_pointer - 2], 4);
+                memcpy(&val1, &frame->stack[stack_pointer - 1], sizeof(val1));
+                memcpy(&val2, &frame->stack[stack_pointer - 2], sizeof(val2));
                 val1 = val1 + val2;
-                memcpy(&frame->stack[stack_pointer - 2], &val1, 4);
+                memcpy(&frame->stack[stack_pointer - 2], &val1, sizeof(val1));
                 stack_pointer--;
                 break;
             }
             case 0x3b:
-                memcpy(&frame->locals[0], &frame->stack[--stack_pointer], 4);
+                memcpy(&frame->locals[0], &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
             case 0x3c:
-                memcpy(&frame->locals[1], &frame->stack[--stack_pointer], 4);
+                memcpy(&frame->locals[1], &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
             case 0x3d:
-                memcpy(&frame->locals[2], &frame->stack[--stack_pointer], 4);
+                memcpy(&frame->locals[2], &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
             case 0x3e:
-                memcpy(&frame->locals[3], &frame->stack[--stack_pointer], 4);
+                memcpy(&frame->locals[3], &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
             case 0x1a:
-                memcpy(&frame->stack[stack_pointer++], &frame->locals[0], 4);
+                memcpy(&frame->stack[stack_pointer++], &frame->locals[0], WORD_SIZE);
                 break;
             case 0x1b:
-                memcpy(&frame->stack[stack_pointer++], &frame->locals[1], 4);
+                memcpy(&frame->stack[stack_pointer++], &frame->locals[1], WORD_SIZE);
                 break;
             case 0x1c:
-                memcpy(&frame->stack[stack_pointer++], &frame->locals[2], 4);
+                memcpy(&frame->stack[stack_pointer++], &frame->locals[2], WORD_SIZE);
                 break;
             case 0x1d:
-                memcpy(&frame->stack[stack_pointer++], &frame->locals[3], 4);
+                memcpy(&frame->stack[stack_pointer++], &frame->locals[3], WORD_SIZE);
                 break;
+            case 0x36: // istore
+                frame->instruction_pointer++;
+                memcpy(&frame->locals[frame->bytecode[frame->instruction_pointer]], &frame->stack[--stack_pointer], WORD_SIZE);
+                break;
+            case 0x15: // iload
+                frame->instruction_pointer++;
+                memcpy(&frame->stack[stack_pointer++], &frame->locals[frame->bytecode[frame->instruction_pointer]], WORD_SIZE);
+                break;
+            case 0x10: // bipush
+            {
+                int8_t val = frame->bytecode[++frame->instruction_pointer];
+                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
+                break;
+            }
+            case 0x11: // sipush
+            {
+                int16_t val = ((uint16_t) frame->bytecode[frame->instruction_pointer + 1] << 8) |
+                              frame->bytecode[frame->instruction_pointer + 2];
+                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
+                frame->instruction_pointer += 2;
+                break;
+            }
+            case 0x59: // dup
+            {
+                memcpy(&frame->stack[stack_pointer], &frame->stack[stack_pointer - 1], WORD_SIZE);
+                stack_pointer++;
+                break;
+            }
+            case 0xbb: // new
+            {
+                frame->instruction_pointer += 2;
+                uint16_t index = ((uint16_t) frame->bytecode[frame->instruction_pointer - 1] << 8) |
+                                 frame->bytecode[frame->instruction_pointer];
+                ConstantPoolEntry *data = &frame->current_class->constant_pool[index];
+                short value[2];
+                memcpy(&value, &data->data, 4);
+
+                uint16_t name_and_type_index = value[0];
+                uint16_t class_index = value[1];
+
+                char *method_name = calloc(1, 3);
+                strcpy(method_name, "CL");
+
+                class_index = frame->current_class->constant_pool[class_index].data.ushort;
+                char *classname = frame->current_class->constant_pool[class_index].addon;
+
+                unsigned long fullmethodnamelen = strlen(classname) + strlen(method_name) + 2;
+                char *fullname = calloc(fullmethodnamelen, sizeof(char));
+                strcpy(fullname, method_name);
+                fullname[strlen(method_name)] = '.';
+                strcpy(&fullname[strlen(method_name) + 1], classname);
+
+                uint8_t ** statics = find_static_method(fullname, 0, 0, MAP_TYPE_CL);
+                JavaClass * class = (JavaClass *) *statics;
+
+                uint32_t * template = (uint32_t *) calloc(1, sizeof(*(class->object_instance_template)));
+                memcpy(template, class->object_instance_template, sizeof(*(class->object_instance_template)));
+                
+                memcpy(&frame->stack[stack_pointer++], &template, sizeof(template));
+                break;
+            }
             case 0xb8:  // invokestatic
             {
                 frame->instruction_pointer += 2;
@@ -170,7 +231,7 @@ uint32_t * execute_frame(Frame *frame) {
                 fullname[strlen(classname)] = '.';
                 strcpy(&fullname[strlen(classname) + 1], method_name);
 
-                uint8_t **new_method_code = find_static_method(fullname, descriptor, 0);
+                uint8_t **new_method_code = find_static_method(fullname, descriptor, 0, MAP_TYPE_SM);
 
                 uint32_t *params = descriptor2params(descriptor, frame->stack, stack_pointer);
 
@@ -180,7 +241,7 @@ uint32_t * execute_frame(Frame *frame) {
                 //execute_frame(&new_frame);
                 // Put the return value on the stack from frame
                 // TODO: check if result should be one or two words
-                memcpy(result, &frame->stack[--stack_pointer], WORD_SIZE);
+                memcpy(&frame->stack[stack_pointer++], result, WORD_SIZE);
                 free(result);
                 break;
             }
@@ -188,36 +249,38 @@ uint32_t * execute_frame(Frame *frame) {
             {
                 break;
             }
-            case 0xac: //ireturn
+            case 0xac: // ireturn
             {
                 // TODO: make sure stack clean?   
                 result_pointer = calloc(1, WORD_SIZE);
                 memcpy(result_pointer, &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
             }
-            case 0xb1: //return
+            case 0xb1: // return
             {
                 result_pointer = calloc(1, WORD_SIZE);
                 break;
             }
-            case 0xad://lreturn 
+            case 0xad: // lreturn 
             {
                 result_pointer = calloc(1, WORD_SIZE);
                 memcpy(result_pointer, &frame->stack[--stack_pointer], WORD_SIZE);
                 memcpy(result_pointer+WORD_SIZE, &frame->stack[--stack_pointer], WORD_SIZE);
                 break;                
             }
+           
+
+
             default:
                 printf("ERROR: not implemented operation: %d !\n", op);
-
                 break;
         }
         frame->instruction_pointer++;
     }
 
-    if (frame->instruction_pointer != frame->bytecode_length) {
+    if (frame->instruction_pointer - 8 != frame->bytecode_length) {
         printf(
-                "Frame pointer != frame bytecode length in the end of frame execution: %ui != %ui",
+                "Frame pointer != frame bytecode length in the end of frame execution: %u != %u\n",
                 frame->instruction_pointer,
                 frame->bytecode_length
         );

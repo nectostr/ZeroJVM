@@ -74,11 +74,11 @@ char *get_constant_pool_entry_name(JavaClass *class, uint32_t index);
 
 void add_statics_entry(JavaClass *class, MFInfo *info);
 
-uint8_t ** find_static_method(char *name, char *signature, uint16_t access_flags);
+uint8_t ** find_static_method(char *name, char *signature, uint16_t access_flags, uint8_t type);
 
 void add_instance_entry(JavaClass *class, MFInfo *info);
 
-JavaClass read_class(char *classname);
+JavaClass * read_class(char *classname);
 
 void debug_print_statics_map();
 
