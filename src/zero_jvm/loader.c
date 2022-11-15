@@ -209,13 +209,13 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
 }
 
 /// Go to static table and find method by full name (Class.name) and signature
-uint8_t ** find_static_method(char *name, char *signature, uint16_t access_flags) {
+uint8_t ** find_static_method(char *name, char *signature, uint16_t access_flags, uint8_t type) {
     uint32_t offset;
     for (uint32_t i = 0; i < runtime.max_statics_map_index; i++) {
         if (
-                (runtime.statics_map[i].type == MAP_TYPE_SM)
+                (runtime.statics_map[i].type == type)
                 && (strcmp(runtime.statics_map[i].name, name) == 0)
-                && (strcmp(runtime.statics_map[i].descriptor, signature) == 0)
+                && ((runtime.statics_map[i].descriptor_index == 0) || (strcmp(runtime.statics_map[i].descriptor, signature) == 0))
                 ) {
             offset = runtime.statics_map[i].offset;
             break;
@@ -295,13 +295,14 @@ void add_instance_entry(JavaClass *class, MFInfo *info) {
     class->max_class_map_index++;
 }
 
-JavaClass read_class(char *classname) {
-    JavaClass class;
+JavaClass * read_class(char *classname) {
+    JavaClass * class = calloc(1, sizeof(JavaClass));
 
+    //JavaClass class = *class_link;
 
-    class.max_class_field_offset = WORD_SIZE * 2; //  because 2 words taken for info
-    class.max_class_rep_offset = 0;
-    class.max_class_map_index = 0;
+    class->max_class_field_offset = WORD_SIZE * 2; //  because 2 words taken for info
+    class->max_class_rep_offset = 0;
+    class->max_class_map_index = 0;
 
 
     loadfile(classname);
@@ -309,20 +310,20 @@ JavaClass read_class(char *classname) {
     read_uint16(); // minor version
     read_uint16(); // major version
 
-    class.constant_pool_size = read_uint16();
-    class.constant_pool = calloc(class.constant_pool_size, sizeof(ConstantPoolEntry));
-    for (uint16_t i = 1; i < class.constant_pool_size; i++) {
+    class->constant_pool_size = read_uint16();
+    class->constant_pool = calloc(class->constant_pool_size, sizeof(ConstantPoolEntry));
+    for (uint16_t i = 1; i < class->constant_pool_size; i++) {
         uint8_t tag = read_uint8();
-        class.constant_pool[i] = read_constant_pool_entry(tag);
+        class->constant_pool[i] = read_constant_pool_entry(tag);
         if (tag == 5 || tag == 6) {
             i++;  // 8-byte constants like double or long
         }
     }
 
 
-    class.access_flags = read_uint16();
-    class.this = read_uint16();
-    class.super = read_uint16();
+    class->access_flags = read_uint16();
+    class->this = read_uint16();
+    class->super = read_uint16();
     uint16_t interface_count = read_uint16(); // should be always 0
     if (interface_count > 0) {
         // panic
@@ -330,43 +331,43 @@ JavaClass read_class(char *classname) {
     }
 
 
-    class.field_count = read_uint16();
+    class->field_count = read_uint16();
 
-    class.class_map = calloc(MAX_THEORETICAL_CLASS_MAP_SIZE, sizeof(MapEntry));
+    class->class_map = calloc(MAX_THEORETICAL_CLASS_MAP_SIZE, sizeof(MapEntry));
 
-    class.object_instance_template = calloc(class.field_count * 2, WORD_SIZE); // see any other * 2 explanation
+    class->object_instance_template = calloc(class->field_count * 2, WORD_SIZE); // see any other * 2 explanation
 
-    for (uint16_t i = 0; i < class.field_count; ++i) {
+    for (uint16_t i = 0; i < class->field_count; ++i) {
         MFInfo current_field = read_meth_field_info();
         if (current_field.access_flags & ACC_STATIC) {
-            add_statics_entry(&class, &current_field);
+            add_statics_entry(class, &current_field);
         } else {
             // Technically, we should set the class rep before first this, but this will never use rep, so it's ok
-            add_instance_entry(&class, &current_field);
+            add_instance_entry(class, &current_field);
         }
     }
 
-    class.method_count = read_uint16();
+    class->method_count = read_uint16();
 
-    class.class_rep = calloc(class.method_count, WORD_SIZE);
+    class->class_rep = calloc(class->method_count, WORD_SIZE);
     // Because we copy class red address, that callocs only here. 
-    uint32_t *header = (uint32_t *) class.object_instance_template;
-    memcpy(header, &class.class_rep, WORD_SIZE);
+    uint32_t *header = (uint32_t *) class->object_instance_template;
+    memcpy(header, &class->class_rep, WORD_SIZE);
     header++;
     uint32_t tmp = 100;
     memcpy(header, &tmp, WORD_SIZE);
     //*header = the rest of header;
 
-    for (uint16_t i = 0; i < class.method_count; ++i) {
+    for (uint16_t i = 0; i < class->method_count; ++i) {
         MFInfo current_method = read_meth_field_info();
-        char *name = get_constant_pool_entry_name(&class, current_method.name_index);
+        char *name = get_constant_pool_entry_name(class, current_method.name_index);
         if (strcmp(name, "<clinit>") == 0) {
             //TODO: "Just call me, I am always last"
         } else if ((current_method.access_flags & ACC_STATIC) ||
                    (strcmp(name, "<init>") == 0)) {
-            add_statics_entry(&class, &current_method);
+            add_statics_entry(class, &current_method);
         } else {
-            add_instance_entry(&class, &current_method);
+            add_instance_entry(class, &current_method);
         }
     }
 
@@ -376,7 +377,7 @@ JavaClass read_class(char *classname) {
     runtime.statics_map[runtime.max_statics_map_index].attributes_count = 0;
     runtime.statics_map[runtime.max_statics_map_index].attributes = NULL;
     runtime.statics_map[runtime.max_statics_map_index].offset = runtime.max_statics_table_offset;
-    memcpy(runtime.statics_table + runtime.max_statics_table_offset, &class.class_rep, WORD_SIZE);
+    memcpy(runtime.statics_table + runtime.max_statics_table_offset, &class->class_rep, WORD_SIZE);
     runtime.max_statics_table_offset += 4;
     runtime.statics_map[runtime.max_statics_map_index].type = MAP_TYPE_REP;
     runtime.max_statics_map_index++;
@@ -387,27 +388,46 @@ JavaClass read_class(char *classname) {
     runtime.statics_map[runtime.max_statics_map_index].attributes_count = 0;
     runtime.statics_map[runtime.max_statics_map_index].attributes = NULL;
     runtime.statics_map[runtime.max_statics_map_index].offset = runtime.max_statics_table_offset;
-    memcpy(runtime.statics_table + runtime.max_statics_table_offset, &class.class_map, WORD_SIZE);
+    memcpy(runtime.statics_table + runtime.max_statics_table_offset, &class->class_map, WORD_SIZE);
     runtime.max_statics_table_offset += 4;
     runtime.statics_map[runtime.max_statics_map_index].type = MAP_TYPE_MAP;
     runtime.max_statics_map_index++;
 
-    MapEntry *temp_map = calloc(class.field_count * 2 + class.method_count,
+    MapEntry *temp_map = calloc(class->field_count * 2 + class->method_count,
                                 sizeof(MapEntry)); // * 2 because we have no idea if they would be long/double or normal guys
     // (though we know, but too inefficient to count them)
-    memcpy(temp_map, class.class_map, class.max_class_map_index * sizeof(MapEntry));
-    free(class.class_map);
-    class.class_map = temp_map;
+    memcpy(temp_map, class->class_map, class->max_class_map_index * sizeof(MapEntry));
+    free(class->class_map);
+    class->class_map = temp_map;
 
-    class.attribute_count = read_uint16();
-    class.attributes = calloc(class.attribute_count, sizeof(AttributeInfo));
-    for (uint16_t i = 0; i < class.attribute_count; ++i) {
-        class.attributes[i] = read_attribute_info();
+    class->attribute_count = read_uint16();
+    class->attributes = calloc(class->attribute_count, sizeof(AttributeInfo));
+    for (uint16_t i = 0; i < class->attribute_count; ++i) {
+        class->attributes[i] = read_attribute_info();
     }
 
     long bytes_read = ftell(filepointer);
     fseek(filepointer, 0L, SEEK_END);
     long bytes_total = ftell(filepointer);
+
+    char *class_name = get_constant_pool_entry_name(class, class->this);
+    unsigned long fullmethodnamelen = strlen(class_name) + 3 + 2;
+    char *fullname = calloc(fullmethodnamelen, sizeof(char));
+    strcpy(fullname, "CL");
+    fullname[2] = '.';
+    strcpy(&fullname[3], class_name);
+
+    runtime.statics_map[runtime.max_statics_map_index].name = fullname; // TODO: Think if we need map and rep at all ub sucg case
+    runtime.statics_map[runtime.max_statics_map_index].access_flags = 0;
+    runtime.statics_map[runtime.max_statics_map_index].attributes_count = 0;
+    runtime.statics_map[runtime.max_statics_map_index].attributes = NULL;
+    runtime.statics_map[runtime.max_statics_map_index].offset = runtime.max_statics_table_offset;
+    runtime.statics_map[runtime.max_statics_map_index].descriptor_index = 0;
+    runtime.statics_map[runtime.max_statics_map_index].descriptor = 0;
+    runtime.statics_map[runtime.max_statics_map_index].type = MAP_TYPE_CL;
+    memcpy(runtime.statics_table + runtime.max_statics_table_offset, &class, WORD_SIZE);
+    runtime.max_statics_table_offset += WORD_SIZE;
+    runtime.max_statics_map_index++;
 
     printf("Bytes read: %ld, bytes total: %ld \n", bytes_read, bytes_total);
     fclose(filepointer);
@@ -422,7 +442,7 @@ void debug_print_statics_table() {
     for (int i = 0; i < runtime.max_statics_table_offset; i = i + 4) {
         memcpy(ptr, &(runtime.statics_table[i]), 4);
 //        printf("%p\t", *ptr);
-        printf("%d\n", *ptr);
+        printf("%u\n", *ptr);
     }
     free(ptr);
     printf("\n");
