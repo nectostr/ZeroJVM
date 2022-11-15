@@ -1,6 +1,6 @@
 class Simple {
     static int field1= 4;
-    static long fielda= 5;
+    static int fielda= 5;
     int field2 = 3;
     int field3 = 7;
     static int field4;
