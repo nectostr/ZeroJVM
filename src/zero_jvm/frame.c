@@ -179,7 +179,7 @@ uint32_t * execute_frame(Frame *frame) {
                 uint32_t * result = execute_frame(&new_frame);
                 //execute_frame(&new_frame);
                 // Put the return value on the stack from frame
-                //check if result should be one or two words
+                // TODO: check if result should be one or two words
                 memcpy(result, &frame->stack[--stack_pointer], WORD_SIZE);
                 free(result);
                 break;
@@ -190,7 +190,7 @@ uint32_t * execute_frame(Frame *frame) {
             }
             case 0xac: //ireturn
             {
-             // make sure stack clean?   
+                //TODO: make sure stack clean?   
                 result_pointer = calloc(1, sizeof(WORD_SIZE));
                 memcpy(result_pointer, &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
@@ -203,7 +203,8 @@ uint32_t * execute_frame(Frame *frame) {
             case 0xad://lreturn 
             {
                 result_pointer = calloc(1, sizeof(WORD_SIZE));
-                memcpy(result_pointer, &frame->stack[--stack_pointer], 2*WORD_SIZE);
+                memcpy(result_pointer, &frame->stack[--stack_pointer], WORD_SIZE);
+                memcpy(result_pointer+WORD_SIZE, &frame->stack[--stack_pointer], WORD_SIZE);
                 break;                
             }
             default:
