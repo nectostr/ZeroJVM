@@ -190,24 +190,26 @@ uint32_t * execute_frame(Frame *frame) {
             }
             case 0xac: //ireturn
             {
-                //TODO: make sure stack clean?   
-                result_pointer = calloc(1, sizeof(WORD_SIZE));
+                // TODO: make sure stack clean?   
+                result_pointer = calloc(1, WORD_SIZE);
                 memcpy(result_pointer, &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
             }
             case 0xb1: //return
             {
-                result_pointer = calloc(1, sizeof(WORD_SIZE));
+                result_pointer = calloc(1, WORD_SIZE);
                 break;
             }
             case 0xad://lreturn 
             {
-                result_pointer = calloc(1, sizeof(WORD_SIZE));
+                result_pointer = calloc(1, WORD_SIZE);
                 memcpy(result_pointer, &frame->stack[--stack_pointer], WORD_SIZE);
                 memcpy(result_pointer+WORD_SIZE, &frame->stack[--stack_pointer], WORD_SIZE);
                 break;                
             }
             default:
+                printf("ERROR: not implemented operation: %d !\n", op);
+
                 break;
         }
         frame->instruction_pointer++;
