@@ -1,8 +1,4 @@
-.idea
 .idea/*
 zero_jvm_default
 *.class
-*.java
-tests
-tests/*
 .vscode
