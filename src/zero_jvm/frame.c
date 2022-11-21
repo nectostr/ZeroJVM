@@ -145,6 +145,22 @@ uint32_t * execute_frame(Frame *frame) {
             case 0x1d:
                 memcpy(&frame->stack[stack_pointer++], &frame->locals[3], WORD_SIZE);
                 break;
+            case 0x4b: // astore_0
+                memcpy(&frame->locals[0], &frame->stack[--stack_pointer], WORD_SIZE);
+                break;
+            case 0x4c: // astore_1
+                memcpy(&frame->locals[1], &frame->stack[--stack_pointer], WORD_SIZE);
+                break;
+            case 0x4d: // astore_2
+                memcpy(&frame->locals[2], &frame->stack[--stack_pointer], WORD_SIZE);
+                break;
+            case 0x4e: // astore_3
+                memcpy(&frame->locals[3], &frame->stack[--stack_pointer], WORD_SIZE);
+                break;
+            case 0x3a: // astore
+                memcpy(&frame->locals[frame->bytecode[frame->instruction_pointer + 1]], &frame->stack[--stack_pointer], WORD_SIZE);
+                frame->instruction_pointer++;
+                break;
             case 0x36: // istore
                 frame->instruction_pointer++;
                 memcpy(&frame->locals[frame->bytecode[frame->instruction_pointer]], &frame->stack[--stack_pointer], WORD_SIZE);
@@ -204,6 +220,26 @@ uint32_t * execute_frame(Frame *frame) {
                 memcpy(template, class->object_instance_template, sizeof(*(class->object_instance_template)));
                 
                 memcpy(&frame->stack[stack_pointer++], &template, sizeof(template));
+                break;
+            }
+            case 0xb6:  // invokevirtual
+            {
+                frame->instruction_pointer += 2;
+                // uint16_t index = ((uint16_t) frame->bytecode[frame->instruction_pointer - 1] << 8) |
+                //                  frame->bytecode[frame->instruction_pointer];
+                // ConstantPoolEntry *data = &frame->current_class->constant_pool[index];
+                // short value[2];
+                // memcpy(&value, &data->data, 4);
+                break;
+            }
+            case 0xb7:  // invokespecial
+            {
+                frame->instruction_pointer += 2;
+                // uint16_t index = ((uint16_t) frame->bytecode[frame->instruction_pointer - 1] << 8) |
+                //                  frame->bytecode[frame->instruction_pointer];
+                // ConstantPoolEntry *data = &frame->current_class->constant_pool[index];
+                // short value[2];
+                // memcpy(&value, &data->data, 4);   
                 break;
             }
             case 0xb8:  // invokestatic
