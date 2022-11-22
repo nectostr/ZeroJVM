@@ -37,7 +37,7 @@ uint32_t *descriptor2params(const char *descriptor, uint32_t *current_stack, uin
 
     uint32_t *params = calloc(words + 1, sizeof(uint32_t));
     params[0] = words;
-    for (int i = 0; i < words; i++) {
+    for (uint32_t i = 0; i < words; i++) {
         memcpy(&params[words - i], &current_stack[current_stack_pointer - i - 1], WORD_SIZE);
     }
 
@@ -198,7 +198,7 @@ uint32_t * execute_frame(Frame *frame) {
                 short value[2];
                 memcpy(&value, &data->data, 4);
 
-                uint16_t name_and_type_index = value[0];
+//                uint16_t name_and_type_index = value[0];
                 uint16_t class_index = value[1];
 
                 char *method_name = calloc(1, 3);
@@ -213,7 +213,7 @@ uint32_t * execute_frame(Frame *frame) {
                 fullname[strlen(method_name)] = '.';
                 strcpy(&fullname[strlen(method_name) + 1], classname);
 
-                uint8_t ** statics = find_static_method(fullname, 0, 0, MAP_TYPE_CL);
+                uint8_t ** statics = find_static_method(fullname, 0, MAP_TYPE_CL);
                 JavaClass * class = (JavaClass *) *statics;
 
                 uint32_t * template = (uint32_t *) calloc(1, sizeof(*(class->object_instance_template)));
@@ -296,7 +296,7 @@ uint32_t * execute_frame(Frame *frame) {
                 fullname[strlen(classname)] = '.';
                 strcpy(&fullname[strlen(classname) + 1], method_name);
 
-                uint8_t **new_method_code = find_static_method(fullname, descriptor, 0, MAP_TYPE_SM);
+                uint8_t **new_method_code = find_static_method(fullname, descriptor, MAP_TYPE_SM);
 
                 uint32_t *params = descriptor2params(descriptor, frame->stack, stack_pointer);
 

@@ -56,14 +56,6 @@ extern FILE *filepointer;
 
 void loadfile(const char *classname);
 
-static uint8_t read_uint8();
-
-static uint16_t read_uint16();
-
-static uint32_t read_uint32();
-
-__attribute__((unused)) static uint64_t read_uint64();
-
 ConstantPoolEntry read_constant_pool_entry(uint8_t tag);
 
 MFInfo read_meth_field_info();
@@ -74,7 +66,7 @@ char *get_constant_pool_entry_name(JavaClass *class, uint32_t index);
 
 void add_statics_entry(JavaClass *class, MFInfo *info);
 
-uint8_t ** find_static_method(char *name, char *signature, uint16_t access_flags, uint8_t type);
+uint8_t **find_static_method(char *name, char *signature, uint8_t type);
 
 void add_instance_entry(JavaClass *class, MFInfo *info);
 

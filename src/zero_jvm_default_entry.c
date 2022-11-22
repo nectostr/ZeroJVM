@@ -17,7 +17,7 @@ int32_t main(int argc, char** argv) {
     debug_print_obj_tmpl(entrypoint);
 
     // find public static void main(String[] args) and run
-    uint8_t ** main = find_static_method("Simple.main", "([Ljava/lang/String;)V", 0x0001 | 0x0008, MAP_TYPE_SM);
+    uint8_t ** main = find_static_method("Simple.main", "([Ljava/lang/String;)V", MAP_TYPE_SM);
     Frame frame = initialize_frame(entrypoint, *main, 0, NULL);
     execute_frame(&frame);
     printf("ENDOFMAIN SUCCESS\n");
