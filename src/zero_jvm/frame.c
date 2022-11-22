@@ -126,8 +126,8 @@ uint32_t *execute_frame(Frame *frame) {
                 uint16_t offset = (uint16_t) frame->bytecode[frame->instruction_pointer + 1] << 8 |
                                   (uint16_t) frame->bytecode[frame->instruction_pointer + 2];
                 frame->instruction_pointer += 2;
-                uint32_t val1 = frame->stack[stack_pointer - 2];
-                uint32_t val2 = frame->stack[stack_pointer - 1];
+                int64_t val1 = frame->stack[stack_pointer - 2];
+                int64_t val2 = frame->stack[stack_pointer - 1];
                 stack_pointer -= 2;
                 uint8_t condition = 0;
                 switch (op) {
