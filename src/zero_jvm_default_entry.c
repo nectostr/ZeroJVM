@@ -5,9 +5,10 @@
 
 #define FILENAME "Simple.class"
 
-int32_t main(int argc, char** argv) {
+int32_t main(int argc, char **argv) {
     init_runtime();
-    JavaClass * entrypoint = read_class(FILENAME);
+    JavaClass *entrypoint = read_class(FILENAME);
+
 
     debug_print_statics_table();
     debug_print_statics_map();
@@ -17,7 +18,7 @@ int32_t main(int argc, char** argv) {
     debug_print_obj_tmpl(entrypoint);
 
     // find public static void main(String[] args) and run
-    uint8_t ** main = find_static_method("Simple.main", "([Ljava/lang/String;)V", MAP_TYPE_SM);
+    uint8_t** main = (uint8_t **) (runtime.statics_table + find_static_record("Simple.main", "([Ljava/lang/String;)V", MAP_TYPE_SM));
     Frame frame = initialize_frame(entrypoint, *main, 0, NULL);
     execute_frame(&frame);
     printf("ENDOFMAIN SUCCESS\n");

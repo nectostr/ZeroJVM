@@ -138,14 +138,9 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
     char *type = get_constant_pool_entry_name(class, info->descriptor_index);
 
     uint16_t class_index = class->constant_pool[class->this].data.ushort;
-    char * classname = class->constant_pool[class_index].addon;
+    char *classname = class->constant_pool[class_index].addon;
 
-    unsigned long fullmethodnamelen = strlen(name) + 2;
-    fullmethodnamelen += strlen(classname);
-    char * fullname = calloc(fullmethodnamelen, sizeof(char));
-    strcpy(fullname, classname);
-    fullname[strlen(classname)] = '.';
-    strcpy(&fullname[strlen(classname)+1], name);
+    char *fullname = combine_names_with_dot(classname, name);
 
     runtime.statics_map[runtime.max_statics_map_index].offset = runtime.max_statics_table_offset;
     uint8_t *entry = runtime.statics_table + runtime.max_statics_table_offset;
@@ -198,7 +193,7 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
             uint8_t *bytecode = calloc(1, attr->attribute_length);
             memcpy(bytecode, attr->info, attr->attribute_length);
             memcpy(entry, &bytecode, WORD_SIZE);
-            if (strcmp(name, "<init>") == 0) {
+            if (strcmp(name, "<init>") == 0 || strcmp(name, "<clinit>") == 0) {
                 runtime.statics_map[runtime.max_statics_map_index].type = MAP_TYPE_SIM;
             } else {
                 runtime.statics_map[runtime.max_statics_map_index].type = MAP_TYPE_SM;
@@ -210,19 +205,18 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
 }
 
 /// Go to static table and find method by full name (Class.name) and signature
-uint8_t **find_static_method(char *name, char *signature, uint8_t type) {
-    uint32_t offset = 0;
+uint32_t find_static_record(char *name, char *signature, uint8_t type) {
     for (uint32_t i = 0; i < runtime.max_statics_map_index; i++) {
         if (
                 (runtime.statics_map[i].type == type)
                 && (strcmp(runtime.statics_map[i].name, name) == 0)
-                && ((runtime.statics_map[i].descriptor_index == 0) || (strcmp(runtime.statics_map[i].descriptor, signature) == 0))
+                && ((runtime.statics_map[i].descriptor_index == 0) ||
+                    (strcmp(runtime.statics_map[i].descriptor, signature) == 0))
                 ) {
-            offset = runtime.statics_map[i].offset;
-            break;
+            return runtime.statics_map[i].offset;
         }
     }
-    return (uint8_t **) (runtime.statics_table + offset);
+    return 0;
 }
 
 
@@ -256,7 +250,7 @@ void add_instance_entry(JavaClass *class, MFInfo *info) {
             class->class_map[class->max_class_map_index].offset = class->max_class_field_offset;
             class->max_class_field_offset += 4;
 
-            class->class_map[class->max_class_map_index].type = MAP_TYPE_SF;
+            class->class_map[class->max_class_map_index].type = MAP_TYPE_IF;
             break;
         }
         case 'J':
@@ -268,7 +262,7 @@ void add_instance_entry(JavaClass *class, MFInfo *info) {
             class->class_map[class->max_class_map_index].offset = class->max_class_field_offset;
             class->max_class_field_offset += 8;
 
-            class->class_map[class->max_class_map_index].type = MAP_TYPE_SF;
+            class->class_map[class->max_class_map_index].type = MAP_TYPE_IF;
             break;
         }
         case '(': //method,
@@ -288,7 +282,7 @@ void add_instance_entry(JavaClass *class, MFInfo *info) {
             if (strcmp(name, "<init>") == 0) {
                 class->class_map[class->max_class_map_index].type = MAP_TYPE_SIM;
             } else {
-                class->class_map[class->max_class_map_index].type = MAP_TYPE_SM;
+                class->class_map[class->max_class_map_index].type = MAP_TYPE_IM;
             }
             break;
             //case ?: //Map, Ref, SIM
@@ -296,8 +290,23 @@ void add_instance_entry(JavaClass *class, MFInfo *info) {
     class->max_class_map_index++;
 }
 
-JavaClass * read_class(char *classname) {
-    JavaClass * class = calloc(1, sizeof(JavaClass));
+uint32_t find_instance_offset(JavaClass *class, char *name, char *signature, uint8_t type) {
+    for (uint32_t i = 0; i < class->max_class_map_index; i++) {
+        if (
+                (class->class_map[i].type == type)
+                && (strcmp(class->class_map[i].name, name) == 0)
+                && ((class->class_map[i].descriptor_index == 0) ||
+                    (strcmp(class->class_map[i].descriptor, signature) == 0))
+                ) {
+            return class->class_map[i].offset;
+        }
+    }
+    // never should be returned, 0 is an erroneous offset
+    return 0;
+}
+
+JavaClass *read_class(char *filename) {
+    JavaClass *class = calloc(1, sizeof(JavaClass));
 
     //JavaClass class = *class_link;
 
@@ -306,7 +315,7 @@ JavaClass * read_class(char *classname) {
     class->max_class_map_index = 0;
 
 
-    loadfile(classname);
+    loadfile(filename);
     read_uint32(); // cafebabe
     read_uint16(); // minor version
     read_uint16(); // major version
@@ -362,10 +371,7 @@ JavaClass * read_class(char *classname) {
     for (uint16_t i = 0; i < class->method_count; ++i) {
         MFInfo current_method = read_meth_field_info();
         char *name = get_constant_pool_entry_name(class, current_method.name_index);
-        if (strcmp(name, "<clinit>") == 0) {
-            //TODO: "Just call me, I am always last"
-        } else if ((current_method.access_flags & ACC_STATIC) ||
-                   (strcmp(name, "<init>") == 0)) {
+        if (strcmp(name, "<clinit>") == 0 || strcmp(name, "<init>") == 0 || current_method.access_flags & ACC_STATIC) {
             add_statics_entry(class, &current_method);
         } else {
             add_instance_entry(class, &current_method);
@@ -412,11 +418,7 @@ JavaClass * read_class(char *classname) {
     long bytes_total = ftell(filepointer);
 
     char *class_name = get_constant_pool_entry_name(class, class->this);
-    unsigned long fullmethodnamelen = strlen(class_name) + 3 + 2;
-    char *fullname = calloc(fullmethodnamelen, sizeof(char));
-    strcpy(fullname, "CL");
-    fullname[2] = '.';
-    strcpy(&fullname[3], class_name);
+    char *fullname = combine_names_with_dot("CL", class_name);
 
     runtime.statics_map[runtime.max_statics_map_index].name = fullname; // TODO: Think if we need map and rep at all ub sucg case
     runtime.statics_map[runtime.max_statics_map_index].access_flags = 0;
@@ -432,6 +434,14 @@ JavaClass * read_class(char *classname) {
 
     printf("Bytes read: %ld, bytes total: %ld \n", bytes_read, bytes_total);
     fclose(filepointer);
+
+    // run clinit
+    fullname = combine_names_with_dot(class_name, "<clinit>");
+    uint8_t **clinit = (uint8_t **) (runtime.statics_table + find_static_record(fullname, "()V", MAP_TYPE_SIM));
+    free(fullname);
+    Frame new_frame = initialize_frame(class, *clinit, 0, NULL);
+    execute_frame(&new_frame);
+
     return class;
 }
 

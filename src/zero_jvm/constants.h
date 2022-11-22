@@ -17,6 +17,8 @@
 #define MAP_TYPE_REP  4
 #define MAP_TYPE_O    5
 #define MAP_TYPE_CL   6
+#define MAP_TYPE_IF   7
+#define MAP_TYPE_IM   8
 
 #define ACC_PUBLIC        0x0001    // Marked or implicitly public in source.
 #define ACC_PROTECTED    0x0004    // Marked protected in source.

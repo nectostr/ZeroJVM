@@ -1,8 +1,12 @@
 #include "frame.h"
 
-uint32_t *descriptor2params(const char *descriptor, uint32_t *current_stack, uint16_t current_stack_pointer) {
+uint32_t *
+descriptor2params(const char *descriptor, uint32_t *current_stack, uint16_t current_stack_pointer, uint8_t objectref) {
+    if (objectref != 0) {
+        objectref = 1;
+    }
     uint8_t flag = 1;  // 0 - stop, 1 - outside of object name, 2 - inside of object name
-    uint32_t words = 0;
+    uint32_t words = objectref;
     while (flag) {
         if (flag == 1) {
             switch (*descriptor) {
@@ -62,10 +66,10 @@ Frame initialize_frame(JavaClass *current_class, uint8_t *bytecode, uint16_t par
     return frame;
 }
 
-uint32_t * execute_frame(Frame *frame) {
+uint32_t *execute_frame(Frame *frame) {
     uint8_t op;
     uint16_t stack_pointer = 0;
-    uint32_t * result_pointer = NULL;
+    uint32_t *result_pointer = NULL;
     while (result_pointer == NULL) {
         op = frame->bytecode[frame->instruction_pointer];
         switch (op) {
@@ -121,16 +125,20 @@ uint32_t * execute_frame(Frame *frame) {
                 stack_pointer--;
                 break;
             }
-            case 0x1a:
+            case 0x2a: // aload_0
+            case 0x1a: // iload_0
                 memcpy(&frame->stack[stack_pointer++], &frame->locals[0], WORD_SIZE);
                 break;
-            case 0x1b:
+            case 0x2b: // aload_1
+            case 0x1b: // iload_1
                 memcpy(&frame->stack[stack_pointer++], &frame->locals[1], WORD_SIZE);
                 break;
-            case 0x1c:
+            case 0x2c: // aload_2
+            case 0x1c: // iload_2
                 memcpy(&frame->stack[stack_pointer++], &frame->locals[2], WORD_SIZE);
                 break;
-            case 0x1d:
+            case 0x2d: // aload_3
+            case 0x1d: // iload_3
                 memcpy(&frame->stack[stack_pointer++], &frame->locals[3], WORD_SIZE);
                 break;
             case 0x3b:
@@ -144,7 +152,7 @@ uint32_t * execute_frame(Frame *frame) {
                 break;
             case 0x3e:
                 memcpy(&frame->locals[3], &frame->stack[--stack_pointer], WORD_SIZE);
-                break;            
+                break;
             case 0x4b: // astore_0
                 memcpy(&frame->locals[0], &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
@@ -158,28 +166,30 @@ uint32_t * execute_frame(Frame *frame) {
                 memcpy(&frame->locals[3], &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
             case 0x3a: // astore
-                memcpy(&frame->locals[frame->bytecode[frame->instruction_pointer + 1]], &frame->stack[--stack_pointer], WORD_SIZE);
+                memcpy(&frame->locals[frame->bytecode[frame->instruction_pointer + 1]], &frame->stack[--stack_pointer],
+                       WORD_SIZE);
                 frame->instruction_pointer++;
                 break;
             case 0x36: // istore
                 frame->instruction_pointer++;
-                memcpy(&frame->locals[frame->bytecode[frame->instruction_pointer]], &frame->stack[--stack_pointer], WORD_SIZE);
+                memcpy(&frame->locals[frame->bytecode[frame->instruction_pointer]], &frame->stack[--stack_pointer],
+                       WORD_SIZE);
                 break;
+            case 0x19:
             case 0x15: // iload
                 frame->instruction_pointer++;
-                memcpy(&frame->stack[stack_pointer++], &frame->locals[frame->bytecode[frame->instruction_pointer]], WORD_SIZE);
+                memcpy(&frame->stack[stack_pointer++], &frame->locals[frame->bytecode[frame->instruction_pointer]],
+                       WORD_SIZE);
                 break;
             case 0x10: // bipush
             {
-                int8_t val = frame->bytecode[++frame->instruction_pointer];
-                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
+                memcpy(&frame->stack[stack_pointer], &frame->bytecode[++frame->instruction_pointer], 1);
+                stack_pointer++;
                 break;
             }
             case 0x11: // sipush
             {
-                int16_t val = ((uint16_t) frame->bytecode[frame->instruction_pointer + 1] << 8) |
-                              frame->bytecode[frame->instruction_pointer + 2];
-                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
+                memcpy(&frame->stack[stack_pointer++], &frame->bytecode[frame->instruction_pointer + 1], 2);
                 frame->instruction_pointer += 2;
                 break;
             }
@@ -201,24 +211,16 @@ uint32_t * execute_frame(Frame *frame) {
 //                uint16_t name_and_type_index = value[0];
                 uint16_t class_index = value[1];
 
-                char *method_name = calloc(1, 3);
-                strcpy(method_name, "CL");
-
                 class_index = frame->current_class->constant_pool[class_index].data.ushort;
                 char *classname = frame->current_class->constant_pool[class_index].addon;
 
-                unsigned long fullmethodnamelen = strlen(classname) + strlen(method_name) + 2;
-                char *fullname = calloc(fullmethodnamelen, sizeof(char));
-                strcpy(fullname, method_name);
-                fullname[strlen(method_name)] = '.';
-                strcpy(&fullname[strlen(method_name) + 1], classname);
+                char *fullname = combine_names_with_dot("CL", classname);
+                JavaClass *class = *((JavaClass **) (runtime.statics_table + find_static_record(fullname, 0, MAP_TYPE_CL)));
+                free(fullname);
 
-                uint8_t ** statics = find_static_method(fullname, 0, MAP_TYPE_CL);
-                JavaClass * class = (JavaClass *) *statics;
+                uint32_t *template = (uint32_t *) calloc(class->field_count * 2, WORD_SIZE);
+                memcpy(template, class->object_instance_template, class->field_count * 2 * WORD_SIZE);
 
-                uint32_t * template = (uint32_t *) calloc(1, sizeof(*(class->object_instance_template)));
-                memcpy(template, class->object_instance_template, sizeof(*(class->object_instance_template)));
-                
                 memcpy(&frame->stack[stack_pointer++], &template, sizeof(template));
                 break;
             }
@@ -232,45 +234,8 @@ uint32_t * execute_frame(Frame *frame) {
                 // memcpy(&value, &data->data, 4);
                 break;
             }
+            case 0xba:  // invokedynamic
             case 0xb7:  // invokespecial
-            {
-                frame->instruction_pointer += 2;
-                uint16_t index = ((uint16_t) frame->bytecode[frame->instruction_pointer - 1] << 8) |
-                                 frame->bytecode[frame->instruction_pointer];
-                ConstantPoolEntry *data = &frame->current_class->constant_pool[index];
-                short value[2];
-                memcpy(&value, &data->data, 4);
-
-                // uint16_t name_and_type_index = value[0];
-                // uint16_t class_index = value[1];
-
-                // memcpy(&value, &frame->current_class->constant_pool[name_and_type_index].data.uint, 4);
-                // char *descriptor = frame->current_class->constant_pool[value[0]].addon;
-                // char *method_name = frame->current_class->constant_pool[value[1]].addon;
-
-                // class_index = frame->current_class->constant_pool[class_index].data.ushort;
-                // char *classname = frame->current_class->constant_pool[class_index].addon;
-
-                // unsigned long fullmethodnamelen = strlen(classname) + strlen(method_name) + 2;
-                // char *fullname = calloc(fullmethodnamelen, sizeof(char));
-                // strcpy(fullname, classname);
-                // fullname[strlen(classname)] = '.';
-                // strcpy(&fullname[strlen(classname) + 1], method_name);
-
-                // uint8_t **new_method_code = find_static_method(fullname, descriptor, 0, MAP_TYPE_SM);
-
-                // uint32_t *params = descriptor2params(descriptor, frame->stack, stack_pointer);
-
-                // // TODO: fix current class to proper class of callee
-                // Frame new_frame = initialize_frame(frame->current_class, *new_method_code, params[0], &params[1]);
-                // uint32_t * result = execute_frame(&new_frame);
-                // //execute_frame(&new_frame);
-                // // Put the return value on the stack from frame
-                // // TODO: check if result should be one or two words
-                // memcpy(&frame->stack[stack_pointer++], result, WORD_SIZE);
-                // free(result);
-                break;
-            }
             case 0xb8:  // invokestatic
             {
                 frame->instruction_pointer += 2;
@@ -290,28 +255,45 @@ uint32_t * execute_frame(Frame *frame) {
                 class_index = frame->current_class->constant_pool[class_index].data.ushort;
                 char *classname = frame->current_class->constant_pool[class_index].addon;
 
-                unsigned long fullmethodnamelen = strlen(classname) + strlen(method_name) + 2;
-                char *fullname = calloc(fullmethodnamelen, sizeof(char));
-                strcpy(fullname, classname);
-                fullname[strlen(classname)] = '.';
-                strcpy(&fullname[strlen(classname) + 1], method_name);
+                char *fullname = combine_names_with_dot(classname, method_name);
 
-                uint8_t **new_method_code = find_static_method(fullname, descriptor, MAP_TYPE_SM);
+                uint8_t type = MAP_TYPE_SM;
+                uint8_t objectref = 0;
+                if (op == 0xb7) {
+                    type = MAP_TYPE_SIM;
+                    objectref = 1;
+                }
 
-                uint32_t *params = descriptor2params(descriptor, frame->stack, stack_pointer);
+                uint32_t *params = descriptor2params(descriptor, frame->stack, stack_pointer, objectref);
+                stack_pointer -= params[0]; // how many arguments from the stack we should throw away
 
-                // TODO: fix current class to proper class of callee
-                Frame new_frame = initialize_frame(frame->current_class, *new_method_code, params[0], &params[1]);
-                uint32_t * result = execute_frame(&new_frame);
-                //execute_frame(&new_frame);
+                if (strcmp(fullname, "java/lang/Object.<init>") == 0) {
+                    free(params);
+                    free(fullname);
+                    break;
+                }
+
+                char *target_class_name = combine_names_with_dot("CL", classname);
+                JavaClass *class = *((JavaClass **) (runtime.statics_table + find_static_record(target_class_name, 0, MAP_TYPE_CL)));
+                free(target_class_name);
+
+                uint8_t **new_method_code = NULL;
+                if (op == 0xba) {
+                    new_method_code =
+                            (uint8_t **) (class->class_rep + find_instance_offset(class, fullname, descriptor, type));
+                } else {
+                    new_method_code = (uint8_t **) (runtime.statics_table + find_static_record(fullname, descriptor, type));
+                }
+
+                Frame new_frame = initialize_frame(class, *new_method_code, params[0], &params[1]);
+                uint32_t *result = execute_frame(&new_frame);
+
                 // Put the return value on the stack from frame
                 // TODO: check if result should be one or two words
                 memcpy(&frame->stack[stack_pointer++], result, WORD_SIZE);
                 free(result);
-                break;
-            }
-            case 0xba:  // invokedynamic
-            {
+                free(fullname);
+                free(params);
                 break;
             }
             case 0xac: // ireturn
@@ -330,11 +312,49 @@ uint32_t * execute_frame(Frame *frame) {
             {
                 result_pointer = calloc(1, WORD_SIZE);
                 memcpy(result_pointer, &frame->stack[--stack_pointer], WORD_SIZE);
-                memcpy(result_pointer+WORD_SIZE, &frame->stack[--stack_pointer], WORD_SIZE);
-                break;                
+                memcpy(result_pointer + WORD_SIZE, &frame->stack[--stack_pointer], WORD_SIZE);
+                break;
             }
-           
+            case 0xb3: // putstatic
+            case 0xb5: // putfield
+            {
+                frame->instruction_pointer += 2;
+                uint16_t index = ((uint16_t) frame->bytecode[frame->instruction_pointer - 1] << 8) |
+                                 frame->bytecode[frame->instruction_pointer];
+                ConstantPoolEntry *data = &frame->current_class->constant_pool[index];
 
+                short value[2];
+                memcpy(&value, &data->data, 4);
+
+                uint16_t name_and_type_index = value[0];
+                uint16_t class_index = value[1];
+
+                memcpy(&value, &frame->current_class->constant_pool[name_and_type_index].data.uint, 4);
+                char *descriptor = frame->current_class->constant_pool[value[0]].addon;
+                char *field_name = frame->current_class->constant_pool[value[1]].addon;
+
+                class_index = frame->current_class->constant_pool[class_index].data.ushort;
+                char *classname = frame->current_class->constant_pool[class_index].addon;
+
+                char *fullname = combine_names_with_dot("CL", classname);
+                JavaClass *class = *((JavaClass **) (runtime.statics_table + find_static_record(fullname, 0, MAP_TYPE_CL)));
+                free(fullname);
+
+                uint32_t value_to_put = frame->stack[--stack_pointer];
+
+                uint8_t *address = NULL;
+                if (op == 0xb5) {
+                    address = (uint8_t *) frame->stack[--stack_pointer];
+                    uint32_t offset = find_instance_offset(class, field_name, descriptor, MAP_TYPE_IF);
+                    address += offset;
+                } else {
+                    fullname = combine_names_with_dot(classname, field_name);
+                    address = (uint8_t *) (runtime.statics_table + find_static_record(fullname, descriptor, MAP_TYPE_SF));
+                    free(fullname);
+                }
+                memcpy(address, &value_to_put, WORD_SIZE); // not working with double
+                break;
+            }
 
             default:
                 printf("ERROR: not implemented operation: %d !\n", op);

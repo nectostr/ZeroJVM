@@ -1,6 +1,6 @@
 class Simple {
-    static int field1= 4;
-    static int fielda= 5;
+    static int field1 = 4;
+    static int fielda = 5;
     int field2 = 3;
     int field3 = 7;
     static int field4;
@@ -17,7 +17,9 @@ class Simple {
 
     }
     public static void main(String a[]) {
-        //int i = m1(78);
+        int i = m1(78);
         Simple s = new Simple();
+        m1(s.field1);
+        m1(s.field2);
     }
 }
