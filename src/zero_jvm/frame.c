@@ -74,11 +74,9 @@ uint32_t *execute_frame(Frame *frame) {
         op = frame->bytecode[frame->instruction_pointer];
         switch (op) {
             case 0x00:  // nop
-                frame->instruction_pointer++;
                 break;
             case 0x01:  // aconst_null
-                frame->stack[stack_pointer] = 0;
-                stack_pointer++;
+                frame->stack[stack_pointer++] = 0;
                 break;
             case 0x02:
             case 0x03:
@@ -86,7 +84,8 @@ uint32_t *execute_frame(Frame *frame) {
             case 0x05:
             case 0x06:
             case 0x07:
-            case 0x08: {
+            case 0x08: // iconst_x
+            {
                 int val = op - 0x03;
                 memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
                 break;
@@ -113,21 +112,15 @@ uint32_t *execute_frame(Frame *frame) {
             case 0xa2:  // if_icmpge
             case 0xa3:  // if_icmpgt
             case 0xa4:  // if_icmple
-            case 0x99:  // ifeq
-            case 0x9a:  // ifne
-            case 0x9b:  // iflt
-            case 0x9c:  // ifge
-            case 0x9d:  // ifgt
-            case 0x9e:  // ifle
-            case 0xc7:  // ifnonnull
-            case 0xc6:  // ifnull
             {
-
                 uint16_t offset = (uint16_t) frame->bytecode[frame->instruction_pointer + 1] << 8 |
                                   (uint16_t) frame->bytecode[frame->instruction_pointer + 2];
                 frame->instruction_pointer += 2;
-                int64_t val1 = frame->stack[stack_pointer - 2];
-                int64_t val2 = frame->stack[stack_pointer - 1];
+                int32_t val1 = 0;
+                int32_t val2 = 0;
+                memcpy(&val1, &frame->stack[stack_pointer - 2], WORD_SIZE);
+                memcpy(&val2, &frame->stack[stack_pointer - 1], WORD_SIZE);
+                printf("val1: %d, val2: %d\n", val1, val2);
                 stack_pointer -= 2;
                 uint8_t condition = 0;
                 switch (op) {
@@ -155,6 +148,32 @@ uint32_t *execute_frame(Frame *frame) {
                     case 0xa4:
                         condition = val1 <= val2;
                         break;
+                    default:
+                        break;
+                }
+                if (condition) {
+                    frame->instruction_pointer += offset - 2;  // -2 because from opcode location (ignoring branchbytes)
+                    frame->instruction_pointer--;
+                }
+                break;
+            }
+            case 0x99:  // ifeq
+            case 0x9a:  // ifne
+            case 0x9b:  // iflt
+            case 0x9c:  // ifge
+            case 0x9d:  // ifgt
+            case 0x9e:  // ifle
+            case 0xc7:  // ifnonnull
+            case 0xc6:  // ifnull
+            {
+                uint16_t offset = (uint16_t) frame->bytecode[frame->instruction_pointer + 1] << 8 |
+                                  (uint16_t) frame->bytecode[frame->instruction_pointer + 2];
+                frame->instruction_pointer += 2;
+
+                int32_t val1 = 0;
+                memcpy(&val1, &frame->stack[--stack_pointer], WORD_SIZE);
+                uint8_t condition = 0;
+                switch (op) {
                     case 0x99:
                         condition = val1 == 0;
                         break;
@@ -183,15 +202,18 @@ uint32_t *execute_frame(Frame *frame) {
                         break;
                 }
                 if (condition) {
-                    frame->instruction_pointer += offset;
+                    frame->instruction_pointer += offset - 2; // -2 because from opcode location (ignoring branchbytes)
+                    frame->instruction_pointer--;
                 }
                 break;
             }
-            case 0xa7: {  // goto
+            case 0xa7: // goto
+            {
                 frame->instruction_pointer += 2;
-                int16_t offset = frame->bytecode[frame->instruction_pointer - 1] << 8;
-                offset |= frame->bytecode[frame->instruction_pointer];
-                frame->instruction_pointer += offset;
+                int16_t offset = frame->bytecode[frame->instruction_pointer - 1] << 8 |
+                                 frame->bytecode[frame->instruction_pointer];
+                frame->instruction_pointer += offset - 2; // -2 because from opcode location (ignoring branchbytes)
+                frame->instruction_pointer--;
                 break;
             }
             case 0x60: // iadd
@@ -460,20 +482,27 @@ uint32_t *execute_frame(Frame *frame) {
                 memcpy(address, &value_to_put, WORD_SIZE); // not working with double
                 break;
             }
+            case 0x84: // iinc
+            {
+                frame->instruction_pointer += 2;
+                uint8_t index = frame->bytecode[frame->instruction_pointer - 1];
+                int8_t value = 0;
+                memcpy(&value, &frame->bytecode[frame->instruction_pointer], 1);
+                frame->locals[index] += value;
+                break;
+            }
 
             default:
+#ifdef X86
                 printf("ERROR: not implemented operation: %d !\n", op);
+#endif
                 break;
         }
         frame->instruction_pointer++;
     }
 
     if (frame->instruction_pointer - 8 != frame->bytecode_length) {
-        printf(
-                "Frame pointer != frame bytecode length in the end of frame execution: %u != %u\n",
-                frame->instruction_pointer,
-                frame->bytecode_length
-        );
+        printf("Frame pointer != frame bytecode length in the end of frame execution\n");
     }
     free(frame->stack);
     free(frame->locals);

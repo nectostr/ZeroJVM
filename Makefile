@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -m32 -Wall -fsanitize=address
+CFLAGS = -g -m32 -Wall -fsanitize=address -DX86
 
 
 FBT	=	../fbt

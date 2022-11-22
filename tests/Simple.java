@@ -17,11 +17,14 @@ class Simple {
 
     }
     public static void main(String argv[]) {
-        int i = m1(78);
-        Simple s = new Simple();
-        int b = s.m2(s.field1, 1324, i);
-        if (b > 0) {
-            s.m3();
+//         int i = m1(78);
+//         Simple s = new Simple();
+//         int b = s.m2(s.field1, 1324, i);
+//         if (b > 0) {
+//             s.m3();
+//         }
+        for (int j = 0; j != 3; j++) {
+            assert true;
         }
     }
 }

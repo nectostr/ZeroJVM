@@ -447,6 +447,7 @@ JavaClass *read_class(char *filename) {
 
 
 // DEBUG FUNCTIONS
+#ifdef X86
 void debug_print_statics_table() {
     printf("STATICS_TABLE\n");
     unsigned int *ptr = malloc(4);
@@ -503,3 +504,4 @@ void debug_print_obj_tmpl(JavaClass *class) {
     free(ptr);
     printf("\n");
 }
+#endif
