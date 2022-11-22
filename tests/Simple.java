@@ -7,8 +7,8 @@ class Simple {
     static int m1(int a) {
         return a + 9;
     }
-    void m2() {
-
+    int m2(int a, int b, int c) {
+        return a + b * c;
     }
     void m3() {
 
@@ -16,10 +16,9 @@ class Simple {
     Simple() {
 
     }
-    public static void main(String a[]) {
+    public static void main(String argv[]) {
         int i = m1(78);
         Simple s = new Simple();
-        m1(s.field1);
-        m1(s.field2);
+        int b = s.m2(s.field1, 1324, i);
     }
 }

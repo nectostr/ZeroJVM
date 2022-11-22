@@ -80,125 +80,116 @@ uint32_t *execute_frame(Frame *frame) {
                 frame->instruction_pointer += offset;
                 break;
             }
-            case 0x02: {
-                int val = -1;
-                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
-                break;
-            }
-            case 0x03: {
-                int val = 0;
-                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
-                break;
-            }
-            case 0x04: {
-                int val = 1;
-                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
-                break;
-            }
-            case 0x05: {
-                int val = 2;
-                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
-                break;
-            }
-            case 0x06: {
-                int val = 3;
-                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
-                break;
-            }
-            case 0x07: {
-                int val = 4;
-                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
-                break;
-            }
+            case 0x02:
+            case 0x03:
+            case 0x04:
+            case 0x05:
+            case 0x06:
+            case 0x07:
             case 0x08: {
-                int val = 5;
+                int val = op - 0x03;
                 memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
                 break;
             }
-            case 0x60: {
+            case 0x12: // ldc
+            {
+                uint8_t index = frame->bytecode[++frame->instruction_pointer];
+                ConstantPoolEntry *data = &frame->current_class->constant_pool[index];
+                memcpy(&frame->stack[stack_pointer++], &data->data.uint, WORD_SIZE);
+                break;
+            }
+            case 0x60: // iadd
+            case 0x64: // isub
+            case 0x68: // imul
+            case 0x6c: // idiv
+            case 0x70: // irem
+            case 0x78: // ishl
+            case 0x7a: // ishr
+            {
                 int val1 = 0;
                 int val2 = 0;
                 memcpy(&val1, &frame->stack[stack_pointer - 1], sizeof(val1));
                 memcpy(&val2, &frame->stack[stack_pointer - 2], sizeof(val2));
-                val1 = val1 + val2;
+                switch (op) {
+                    case 0x60:
+                        val1 = val1 + val2;
+                        break;
+                    case 0x64:
+                        val1 = val2 - val1;
+                        break;
+                    case 0x68:
+                        val1 = val1 * val2;
+                        break;
+                    case 0x6c:
+                        val1 = val2 / val1;
+                        break;
+                    case 0x70:
+                        val1 = val2 % val1;
+                        break;
+                    case 0x78:
+                        val1 = val2 << val1;
+                        break;
+                    case 0x7a:
+                        val1 = val2 >> val1;
+                        break;
+                    default:
+                        break;
+                }
                 memcpy(&frame->stack[stack_pointer - 2], &val1, sizeof(val1));
                 stack_pointer--;
                 break;
             }
             case 0x2a: // aload_0
-            case 0x1a: // iload_0
-                memcpy(&frame->stack[stack_pointer++], &frame->locals[0], WORD_SIZE);
-                break;
             case 0x2b: // aload_1
-            case 0x1b: // iload_1
-                memcpy(&frame->stack[stack_pointer++], &frame->locals[1], WORD_SIZE);
-                break;
             case 0x2c: // aload_2
-            case 0x1c: // iload_2
-                memcpy(&frame->stack[stack_pointer++], &frame->locals[2], WORD_SIZE);
-                break;
             case 0x2d: // aload_3
+                memcpy(&frame->stack[stack_pointer++], &frame->locals[op - 0x2a], WORD_SIZE);
+                break;
+            case 0x1a: // iload_0
+            case 0x1b: // iload_1
+            case 0x1c: // iload_2
             case 0x1d: // iload_3
-                memcpy(&frame->stack[stack_pointer++], &frame->locals[3], WORD_SIZE);
+                memcpy(&frame->stack[stack_pointer++], &frame->locals[op - 0x1a], WORD_SIZE);
                 break;
-            case 0x3b:
-                memcpy(&frame->locals[0], &frame->stack[--stack_pointer], WORD_SIZE);
-                break;
-            case 0x3c:
-                memcpy(&frame->locals[1], &frame->stack[--stack_pointer], WORD_SIZE);
-                break;
-            case 0x3d:
-                memcpy(&frame->locals[2], &frame->stack[--stack_pointer], WORD_SIZE);
-                break;
-            case 0x3e:
-                memcpy(&frame->locals[3], &frame->stack[--stack_pointer], WORD_SIZE);
+            case 0x3b: // istore_0
+            case 0x3c: // istore_1
+            case 0x3d: // istore_2
+            case 0x3e: // istore_3
+                memcpy(&frame->locals[op - 0x3b], &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
             case 0x4b: // astore_0
-                memcpy(&frame->locals[0], &frame->stack[--stack_pointer], WORD_SIZE);
-                break;
             case 0x4c: // astore_1
-                memcpy(&frame->locals[1], &frame->stack[--stack_pointer], WORD_SIZE);
-                break;
             case 0x4d: // astore_2
-                memcpy(&frame->locals[2], &frame->stack[--stack_pointer], WORD_SIZE);
-                break;
             case 0x4e: // astore_3
-                memcpy(&frame->locals[3], &frame->stack[--stack_pointer], WORD_SIZE);
+                memcpy(&frame->locals[op - 0x4b], &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
             case 0x3a: // astore
-                memcpy(&frame->locals[frame->bytecode[frame->instruction_pointer + 1]], &frame->stack[--stack_pointer],
-                       WORD_SIZE);
-                frame->instruction_pointer++;
-                break;
             case 0x36: // istore
                 frame->instruction_pointer++;
                 memcpy(&frame->locals[frame->bytecode[frame->instruction_pointer]], &frame->stack[--stack_pointer],
                        WORD_SIZE);
                 break;
-            case 0x19:
+            case 0x19: // aload
             case 0x15: // iload
                 frame->instruction_pointer++;
                 memcpy(&frame->stack[stack_pointer++], &frame->locals[frame->bytecode[frame->instruction_pointer]],
                        WORD_SIZE);
                 break;
             case 0x10: // bipush
-            {
                 memcpy(&frame->stack[stack_pointer], &frame->bytecode[++frame->instruction_pointer], 1);
                 stack_pointer++;
                 break;
-            }
             case 0x11: // sipush
-            {
                 memcpy(&frame->stack[stack_pointer++], &frame->bytecode[frame->instruction_pointer + 1], 2);
                 frame->instruction_pointer += 2;
                 break;
-            }
+            case 0x57: // pop
+                stack_pointer--;
+                break;
             case 0x59: // dup
-            {
                 memcpy(&frame->stack[stack_pointer], &frame->stack[stack_pointer - 1], WORD_SIZE);
                 stack_pointer++;
                 break;
-            }
             case 0xbb: // new
             {
                 frame->instruction_pointer += 2;
@@ -215,7 +206,8 @@ uint32_t *execute_frame(Frame *frame) {
                 char *classname = frame->current_class->constant_pool[class_index].addon;
 
                 char *fullname = combine_names_with_dot("CL", classname);
-                JavaClass *class = *((JavaClass **) (runtime.statics_table + find_static_record(fullname, 0, MAP_TYPE_CL)));
+                JavaClass *class = *((JavaClass **) (runtime.statics_table +
+                                                     find_static_record(fullname, 0, MAP_TYPE_CL)));
                 free(fullname);
 
                 uint32_t *template = (uint32_t *) calloc(class->field_count * 2, WORD_SIZE);
@@ -225,18 +217,9 @@ uint32_t *execute_frame(Frame *frame) {
                 break;
             }
             case 0xb6:  // invokevirtual
-            {
-                frame->instruction_pointer += 2;
-                // uint16_t index = ((uint16_t) frame->bytecode[frame->instruction_pointer - 1] << 8) |
-                //                  frame->bytecode[frame->instruction_pointer];
-                // ConstantPoolEntry *data = &frame->current_class->constant_pool[index];
-                // short value[2];
-                // memcpy(&value, &data->data, 4);
-                break;
-            }
-            case 0xba:  // invokedynamic
             case 0xb7:  // invokespecial
             case 0xb8:  // invokestatic
+            case 0xba:  // invokedynamic
             {
                 frame->instruction_pointer += 2;
                 uint16_t index = ((uint16_t) frame->bytecode[frame->instruction_pointer - 1] << 8) |
@@ -274,45 +257,69 @@ uint32_t *execute_frame(Frame *frame) {
                 }
 
                 char *target_class_name = combine_names_with_dot("CL", classname);
-                JavaClass *class = *((JavaClass **) (runtime.statics_table + find_static_record(target_class_name, 0, MAP_TYPE_CL)));
+                JavaClass *class = *((JavaClass **) (runtime.statics_table +
+                                                     find_static_record(target_class_name, 0, MAP_TYPE_CL)));
                 free(target_class_name);
 
                 uint8_t **new_method_code = NULL;
-                if (op == 0xba) {
+                if (op == 0xba || op == 0xb6) {
                     new_method_code =
                             (uint8_t **) (class->class_rep + find_instance_offset(class, fullname, descriptor, type));
                 } else {
-                    new_method_code = (uint8_t **) (runtime.statics_table + find_static_record(fullname, descriptor, type));
+                    new_method_code = (uint8_t **) (runtime.statics_table +
+                                                    find_static_record(fullname, descriptor, type));
                 }
 
                 Frame new_frame = initialize_frame(class, *new_method_code, params[0], &params[1]);
                 uint32_t *result = execute_frame(&new_frame);
 
                 // Put the return value on the stack from frame
-                // TODO: check if result should be one or two words
-                memcpy(&frame->stack[stack_pointer++], result, WORD_SIZE);
+                // TODO: double
+                if (strcmp(&descriptor[strlen(descriptor) - 2], ")V") != 0) {
+                    memcpy(&frame->stack[stack_pointer++], result, WORD_SIZE);
+                }
                 free(result);
                 free(fullname);
                 free(params);
                 break;
             }
             case 0xac: // ireturn
-            {
                 // TODO: make sure stack clean?   
                 result_pointer = calloc(1, WORD_SIZE);
                 memcpy(result_pointer, &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
-            }
             case 0xb1: // return
-            {
                 result_pointer = calloc(1, WORD_SIZE);
                 break;
-            }
-            case 0xad: // lreturn 
-            {
+            case 0xad: // lreturn
                 result_pointer = calloc(1, WORD_SIZE);
                 memcpy(result_pointer, &frame->stack[--stack_pointer], WORD_SIZE);
                 memcpy(result_pointer + WORD_SIZE, &frame->stack[--stack_pointer], WORD_SIZE);
+                break;
+            case 0xb2: // getstatic
+            {
+                frame->instruction_pointer += 2;
+                uint16_t index = ((uint16_t) frame->bytecode[frame->instruction_pointer - 1] << 8) |
+                                 frame->bytecode[frame->instruction_pointer];
+                ConstantPoolEntry *data = &frame->current_class->constant_pool[index];
+                short value[2];
+                memcpy(&value, &data->data, 4);
+
+                uint16_t name_and_type_index = value[0];
+                uint16_t class_index = value[1];
+
+                memcpy(&value, &frame->current_class->constant_pool[name_and_type_index].data.uint, 4);
+                char *descriptor = frame->current_class->constant_pool[value[0]].addon;
+                char *field_name = frame->current_class->constant_pool[value[1]].addon;
+
+                class_index = frame->current_class->constant_pool[class_index].data.ushort;
+                char *classname = frame->current_class->constant_pool[class_index].addon;
+
+                char *fullname = combine_names_with_dot(classname, field_name);
+                uint32_t *value_pointer = (uint32_t *) (runtime.statics_table +
+                                                        find_static_record(fullname, descriptor, MAP_TYPE_SF));
+                memcpy(&frame->stack[stack_pointer++], value_pointer, WORD_SIZE);
+                free(fullname);
                 break;
             }
             case 0xb3: // putstatic
@@ -337,7 +344,8 @@ uint32_t *execute_frame(Frame *frame) {
                 char *classname = frame->current_class->constant_pool[class_index].addon;
 
                 char *fullname = combine_names_with_dot("CL", classname);
-                JavaClass *class = *((JavaClass **) (runtime.statics_table + find_static_record(fullname, 0, MAP_TYPE_CL)));
+                JavaClass *class = *((JavaClass **) (runtime.statics_table +
+                                                     find_static_record(fullname, 0, MAP_TYPE_CL)));
                 free(fullname);
 
                 uint32_t value_to_put = frame->stack[--stack_pointer];
@@ -349,7 +357,8 @@ uint32_t *execute_frame(Frame *frame) {
                     address += offset;
                 } else {
                     fullname = combine_names_with_dot(classname, field_name);
-                    address = (uint8_t *) (runtime.statics_table + find_static_record(fullname, descriptor, MAP_TYPE_SF));
+                    address = (uint8_t *) (runtime.statics_table +
+                                           find_static_record(fullname, descriptor, MAP_TYPE_SF));
                     free(fullname);
                 }
                 memcpy(address, &value_to_put, WORD_SIZE); // not working with double
