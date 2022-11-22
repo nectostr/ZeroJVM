@@ -73,13 +73,13 @@ uint32_t *execute_frame(Frame *frame) {
     while (result_pointer == NULL) {
         op = frame->bytecode[frame->instruction_pointer];
         switch (op) {
-            case 0xa7: {  // goto
-                frame->instruction_pointer += 2;
-                int16_t offset = frame->bytecode[frame->instruction_pointer - 1] << 8;
-                offset |= frame->bytecode[frame->instruction_pointer];
-                frame->instruction_pointer += offset;
+            case 0x00:  // nop
+                frame->instruction_pointer++;
                 break;
-            }
+            case 0x01:  // aconst_null
+                frame->stack[stack_pointer] = 0;
+                stack_pointer++;
+                break;
             case 0x02:
             case 0x03:
             case 0x04:
@@ -91,11 +91,107 @@ uint32_t *execute_frame(Frame *frame) {
                 memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
                 break;
             }
+            case 0x0b:  // fconst_0
+            case 0x0c:  // fconst_1
+            case 0x0d:  // fconst_2
+                frame->stack[stack_pointer] = 0;
+                frame->stack[stack_pointer + 1] = op - 0x0b;
+                stack_pointer += 2;
+                break;
             case 0x12: // ldc
             {
                 uint8_t index = frame->bytecode[++frame->instruction_pointer];
                 ConstantPoolEntry *data = &frame->current_class->constant_pool[index];
                 memcpy(&frame->stack[stack_pointer++], &data->data.uint, WORD_SIZE);
+                break;
+            }
+            case 0xa5:  // if_acmpeq
+            case 0xa6:  // if_acmpne
+            case 0x9f:  // if_icmpeq
+            case 0xa0:  // if_icmpne
+            case 0xa1:  // if_icmplt
+            case 0xa2:  // if_icmpge
+            case 0xa3:  // if_icmpgt
+            case 0xa4:  // if_icmple
+            case 0x99:  // ifeq
+            case 0x9a:  // ifne
+            case 0x9b:  // iflt
+            case 0x9c:  // ifge
+            case 0x9d:  // ifgt
+            case 0x9e:  // ifle
+            case 0xc7:  // ifnonnull
+            case 0xc6:  // ifnull
+            {
+
+                uint16_t offset = (uint16_t) frame->bytecode[frame->instruction_pointer + 1] << 8 |
+                                  (uint16_t) frame->bytecode[frame->instruction_pointer + 2];
+                frame->instruction_pointer += 2;
+                uint32_t val1 = frame->stack[stack_pointer - 2];
+                uint32_t val2 = frame->stack[stack_pointer - 1];
+                stack_pointer -= 2;
+                uint8_t condition = 0;
+                switch (op) {
+                    case 0xa5:
+                        condition = val1 == val2;
+                        break;
+                    case 0xa6:
+                        condition = val1 != val2;
+                        break;
+                    case 0x9f:
+                        condition = val1 == val2;
+                        break;
+                    case 0xa0:
+                        condition = val1 != val2;
+                        break;
+                    case 0xa1:
+                        condition = val1 < val2;
+                        break;
+                    case 0xa2:
+                        condition = val1 >= val2;
+                        break;
+                    case 0xa3:
+                        condition = val1 > val2;
+                        break;
+                    case 0xa4:
+                        condition = val1 <= val2;
+                        break;
+                    case 0x99:
+                        condition = val1 == 0;
+                        break;
+                    case 0x9a:
+                        condition = val1 != 0;
+                        break;
+                    case 0x9b:
+                        condition = val1 < 0;
+                        break;
+                    case 0x9c:
+                        condition = val1 >= 0;
+                        break;
+                    case 0x9d:
+                        condition = val1 > 0;
+                        break;
+                    case 0x9e:
+                        condition = val1 <= 0;
+                        break;
+                    case 0xc7:
+                        condition = val1 != 0;
+                        break;
+                    case 0xc6:
+                        condition = val1 == 0;
+                        break;
+                    default:
+                        break;
+                }
+                if (condition) {
+                    frame->instruction_pointer += offset;
+                }
+                break;
+            }
+            case 0xa7: {  // goto
+                frame->instruction_pointer += 2;
+                int16_t offset = frame->bytecode[frame->instruction_pointer - 1] << 8;
+                offset |= frame->bytecode[frame->instruction_pointer];
+                frame->instruction_pointer += offset;
                 break;
             }
             case 0x60: // iadd

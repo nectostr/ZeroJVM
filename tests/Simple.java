@@ -20,5 +20,8 @@ class Simple {
         int i = m1(78);
         Simple s = new Simple();
         int b = s.m2(s.field1, 1324, i);
+        if (b > 0) {
+            s.m3();
+        }
     }
 }
