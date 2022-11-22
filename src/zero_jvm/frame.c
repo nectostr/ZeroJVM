@@ -121,18 +121,6 @@ uint32_t * execute_frame(Frame *frame) {
                 stack_pointer--;
                 break;
             }
-            case 0x3b:
-                memcpy(&frame->locals[0], &frame->stack[--stack_pointer], WORD_SIZE);
-                break;
-            case 0x3c:
-                memcpy(&frame->locals[1], &frame->stack[--stack_pointer], WORD_SIZE);
-                break;
-            case 0x3d:
-                memcpy(&frame->locals[2], &frame->stack[--stack_pointer], WORD_SIZE);
-                break;
-            case 0x3e:
-                memcpy(&frame->locals[3], &frame->stack[--stack_pointer], WORD_SIZE);
-                break;
             case 0x1a:
                 memcpy(&frame->stack[stack_pointer++], &frame->locals[0], WORD_SIZE);
                 break;
@@ -145,6 +133,18 @@ uint32_t * execute_frame(Frame *frame) {
             case 0x1d:
                 memcpy(&frame->stack[stack_pointer++], &frame->locals[3], WORD_SIZE);
                 break;
+            case 0x3b:
+                memcpy(&frame->locals[0], &frame->stack[--stack_pointer], WORD_SIZE);
+                break;
+            case 0x3c:
+                memcpy(&frame->locals[1], &frame->stack[--stack_pointer], WORD_SIZE);
+                break;
+            case 0x3d:
+                memcpy(&frame->locals[2], &frame->stack[--stack_pointer], WORD_SIZE);
+                break;
+            case 0x3e:
+                memcpy(&frame->locals[3], &frame->stack[--stack_pointer], WORD_SIZE);
+                break;            
             case 0x4b: // astore_0
                 memcpy(&frame->locals[0], &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
@@ -235,11 +235,40 @@ uint32_t * execute_frame(Frame *frame) {
             case 0xb7:  // invokespecial
             {
                 frame->instruction_pointer += 2;
-                // uint16_t index = ((uint16_t) frame->bytecode[frame->instruction_pointer - 1] << 8) |
-                //                  frame->bytecode[frame->instruction_pointer];
-                // ConstantPoolEntry *data = &frame->current_class->constant_pool[index];
-                // short value[2];
-                // memcpy(&value, &data->data, 4);   
+                uint16_t index = ((uint16_t) frame->bytecode[frame->instruction_pointer - 1] << 8) |
+                                 frame->bytecode[frame->instruction_pointer];
+                ConstantPoolEntry *data = &frame->current_class->constant_pool[index];
+                short value[2];
+                memcpy(&value, &data->data, 4);
+
+                // uint16_t name_and_type_index = value[0];
+                // uint16_t class_index = value[1];
+
+                // memcpy(&value, &frame->current_class->constant_pool[name_and_type_index].data.uint, 4);
+                // char *descriptor = frame->current_class->constant_pool[value[0]].addon;
+                // char *method_name = frame->current_class->constant_pool[value[1]].addon;
+
+                // class_index = frame->current_class->constant_pool[class_index].data.ushort;
+                // char *classname = frame->current_class->constant_pool[class_index].addon;
+
+                // unsigned long fullmethodnamelen = strlen(classname) + strlen(method_name) + 2;
+                // char *fullname = calloc(fullmethodnamelen, sizeof(char));
+                // strcpy(fullname, classname);
+                // fullname[strlen(classname)] = '.';
+                // strcpy(&fullname[strlen(classname) + 1], method_name);
+
+                // uint8_t **new_method_code = find_static_method(fullname, descriptor, 0, MAP_TYPE_SM);
+
+                // uint32_t *params = descriptor2params(descriptor, frame->stack, stack_pointer);
+
+                // // TODO: fix current class to proper class of callee
+                // Frame new_frame = initialize_frame(frame->current_class, *new_method_code, params[0], &params[1]);
+                // uint32_t * result = execute_frame(&new_frame);
+                // //execute_frame(&new_frame);
+                // // Put the return value on the stack from frame
+                // // TODO: check if result should be one or two words
+                // memcpy(&frame->stack[stack_pointer++], result, WORD_SIZE);
+                // free(result);
                 break;
             }
             case 0xb8:  // invokestatic
