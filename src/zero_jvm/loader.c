@@ -440,7 +440,8 @@ JavaClass *read_class(char *filename) {
     uint8_t **clinit = (uint8_t **) (runtime.statics_table + find_static_record(fullname, "()V", MAP_TYPE_SIM));
     free(fullname);
     Frame new_frame = initialize_frame(class, *clinit, 0, NULL);
-    execute_frame(&new_frame);
+    uint32_t *result = execute_frame(&new_frame);
+    free(result);
 
     return class;
 }

@@ -18,9 +18,11 @@ int32_t main(int argc, char **argv) {
     debug_print_obj_tmpl(entrypoint);
 
     // find public static void main(String[] args) and run
-    uint8_t** main = (uint8_t **) (runtime.statics_table + find_static_record("Simple.main", "([Ljava/lang/String;)V", MAP_TYPE_SM));
+    uint8_t **main = (uint8_t **) (runtime.statics_table +
+                                   find_static_record("Simple.main", "([Ljava/lang/String;)V", MAP_TYPE_SM));
     Frame frame = initialize_frame(entrypoint, *main, 0, NULL);
-    execute_frame(&frame);
+    uint32_t *result = execute_frame(&frame);
+    free(result);
     printf("ENDOFMAIN SUCCESS\n");
     return 0;
 }

@@ -120,7 +120,6 @@ uint32_t *execute_frame(Frame *frame) {
                 int32_t val2 = 0;
                 memcpy(&val1, &frame->stack[stack_pointer - 2], WORD_SIZE);
                 memcpy(&val2, &frame->stack[stack_pointer - 1], WORD_SIZE);
-                printf("val1: %d, val2: %d\n", val1, val2);
                 stack_pointer -= 2;
                 uint8_t condition = 0;
                 switch (op) {
@@ -362,6 +361,10 @@ uint32_t *execute_frame(Frame *frame) {
                 uint8_t objectref = 0;
                 if (op == 0xb7) {
                     type = MAP_TYPE_SIM;
+                    objectref = 1;
+                }
+                if (op == 0xba || op == 0xb6) {
+                    type = MAP_TYPE_IM;
                     objectref = 1;
                 }
 
