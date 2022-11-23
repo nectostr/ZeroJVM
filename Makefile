@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -g -m32 -Wall -fsanitize=address -DX86
 
 
-FBT	=	../fbt
+FBT	=	./fbt
 APPPATH =	unleashed-firmware/applications_user/zero_jvm
 CPPFLAGS = -I unleashed-firmware/furi -I unleashed-firmware/applications/services
 SRC = src/zero_jvm_default_entry.c src/zero_jvm/loader.c src/zero_jvm/runtime.c src/zero_jvm/frame.c src/zero_jvm/utils.c
@@ -21,6 +21,9 @@ flipper:
 	cp -r src/* $(APPPATH)/
 	rm $(APPPATH)/zero_jvm_default_entry.c
 	cd unleashed-firmware && $(FBT) fap_zero_jvm
+
+launch:
+	cd unleashed-firmware && sudo $(FBT) launch_app APPSRC=applications_user/zero_jvm
 
 clean:
 	rm -rf $(APPPATH) zero_jvm_default

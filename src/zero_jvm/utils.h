@@ -1,6 +1,18 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdio.h>
+
+#ifndef X86
+#include <storage/storage.h>
+extern File* entrypointfile;
+#endif
+
+
+void *custom_calloc (size_t nmemb, size_t size);
+FILE *custom_fopen (const char *__restrict filename, const char *__restrict modes);
+int custom_fclose (FILE *stream);
+size_t custom_fread (void *__restrict ptr, size_t size, size_t n, FILE *__restrict stream);
 
 
 typedef struct {
@@ -64,3 +76,4 @@ typedef struct {
 } JavaClass;
 
 char *combine_names_with_dot(char *firstname, char *lastname);
+

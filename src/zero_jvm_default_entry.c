@@ -9,13 +9,13 @@ int32_t main(int argc, char **argv) {
     init_runtime();
     JavaClass *entrypoint = read_class(FILENAME);
 
-
-    debug_print_statics_table();
-    debug_print_statics_map();
-
-    debug_print_map(entrypoint);
-    debug_print_rep(entrypoint);
-    debug_print_obj_tmpl(entrypoint);
+//
+//    debug_print_statics_table();
+//    debug_print_statics_map();
+//
+//    debug_print_map(entrypoint);
+//    debug_print_rep(entrypoint);
+//    debug_print_obj_tmpl(entrypoint);
 
     // find public static void main(String[] args) and run
     uint8_t **main = (uint8_t **) (runtime.statics_table +

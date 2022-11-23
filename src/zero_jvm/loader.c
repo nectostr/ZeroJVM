@@ -4,27 +4,27 @@ uint8_t filebytebuffer[8];
 FILE *filepointer;
 
 void loadfile(const char *classname) {
-    filepointer = fopen(classname, "rb");
+    filepointer = custom_fopen(classname, "rb");
 }
 
 static uint8_t read_uint8() {
-    fread(filebytebuffer, 1, 1, filepointer);
+    custom_fread(filebytebuffer, 1, 1, filepointer);
     return filebytebuffer[0];
 }
 
 static uint16_t read_uint16() {
-    fread(filebytebuffer, 2, 1, filepointer);
+    custom_fread(filebytebuffer, 2, 1, filepointer);
     return (uint16_t) filebytebuffer[0] << 8 | (uint16_t) filebytebuffer[1];
 }
 
 static uint32_t read_uint32() {
-    fread(filebytebuffer, 4, 1, filepointer);
+    custom_fread(filebytebuffer, 4, 1, filepointer);
     return (uint32_t) filebytebuffer[0] << 24 | (uint32_t) filebytebuffer[1] << 16 |
            (uint32_t) filebytebuffer[2] << 8 | (uint32_t) filebytebuffer[3];
 }
 
 __attribute__((unused)) static uint64_t read_uint64() {
-    fread(filebytebuffer, 8, 1, filepointer);
+    custom_fread(filebytebuffer, 8, 1, filepointer);
     return (uint64_t) filebytebuffer[0] << 56 | (uint64_t) filebytebuffer[1] << 48 |
            (uint64_t) filebytebuffer[2] << 40 | (uint64_t) filebytebuffer[3] << 32 |
            (uint64_t) filebytebuffer[4] << 24 | (uint64_t) filebytebuffer[5] << 16 |
@@ -38,7 +38,7 @@ ConstantPoolEntry read_constant_pool_entry(uint8_t tag) {
         case 1:
             // utf8
             entry.data.ushort = read_uint16();
-            entry.addon = calloc(entry.data.ushort + 1, 1);
+            entry.addon = custom_calloc(entry.data.ushort + 1, 1);
             for (uint16_t i = 0; i < entry.data.ushort; i++) {
                 entry.addon[i] = read_uint8();
             }
@@ -86,7 +86,7 @@ MFInfo read_meth_field_info() {
     info.name_index = read_uint16();
     info.descriptor_index = read_uint16();
     info.attributes_count = read_uint16();
-    info.attributes = calloc(info.attributes_count, sizeof(AttributeInfo));
+    info.attributes = custom_calloc(info.attributes_count, sizeof(AttributeInfo));
     for (uint16_t i = 0; i < info.attributes_count; i++) {
         info.attributes[i] = read_attribute_info();
     }
@@ -97,7 +97,7 @@ AttributeInfo read_attribute_info() {
     AttributeInfo attribute;
     attribute.attribute_name_index = read_uint16();
     attribute.attribute_length = read_uint32();
-    attribute.info = calloc(attribute.attribute_length, 1);
+    attribute.info = custom_calloc(attribute.attribute_length, 1);
     for (uint32_t i = 0; i < attribute.attribute_length; i++) {
         attribute.info[i] = read_uint8();
     }
@@ -190,7 +190,7 @@ void add_statics_entry(JavaClass *class, MFInfo *info) {
                 attr++;
             }
 
-            uint8_t *bytecode = calloc(1, attr->attribute_length);
+            uint8_t *bytecode = custom_calloc(1, attr->attribute_length);
             memcpy(bytecode, attr->info, attr->attribute_length);
             memcpy(entry, &bytecode, WORD_SIZE);
             if (strcmp(name, "<init>") == 0 || strcmp(name, "<clinit>") == 0) {
@@ -276,7 +276,7 @@ void add_instance_entry(JavaClass *class, MFInfo *info) {
                 attr++;
             }
 
-            uint8_t *bytecode = calloc(1, attr->attribute_length);
+            uint8_t *bytecode = custom_calloc(1, attr->attribute_length);
             memcpy(bytecode, attr->info, attr->attribute_length);
             memcpy(entry, &bytecode, WORD_SIZE);
             if (strcmp(name, "<init>") == 0) {
@@ -306,9 +306,7 @@ uint32_t find_instance_offset(JavaClass *class, char *name, char *signature, uin
 }
 
 JavaClass *read_class(char *filename) {
-    JavaClass *class = calloc(1, sizeof(JavaClass));
-
-    //JavaClass class = *class_link;
+    JavaClass *class = custom_calloc(1, sizeof(JavaClass));
 
     class->max_class_field_offset = WORD_SIZE * 2; //  because 2 words taken for info
     class->max_class_rep_offset = 0;
@@ -321,7 +319,7 @@ JavaClass *read_class(char *filename) {
     read_uint16(); // major version
 
     class->constant_pool_size = read_uint16();
-    class->constant_pool = calloc(class->constant_pool_size, sizeof(ConstantPoolEntry));
+    class->constant_pool = custom_calloc(class->constant_pool_size, sizeof(ConstantPoolEntry));
     for (uint16_t i = 1; i < class->constant_pool_size; i++) {
         uint8_t tag = read_uint8();
         class->constant_pool[i] = read_constant_pool_entry(tag);
@@ -334,18 +332,13 @@ JavaClass *read_class(char *filename) {
     class->access_flags = read_uint16();
     class->this = read_uint16();
     class->super = read_uint16();
-    uint16_t interface_count = read_uint16(); // should be always 0
-    if (interface_count > 0) {
-        // panic
-        exit(1);
-    }
-
+    read_uint16(); // interface count - should be always 0
 
     class->field_count = read_uint16();
 
-    class->class_map = calloc(MAX_THEORETICAL_CLASS_MAP_SIZE, sizeof(MapEntry));
+    class->class_map = custom_calloc(MAX_THEORETICAL_CLASS_MAP_SIZE, sizeof(MapEntry));
 
-    class->object_instance_template = calloc(class->field_count * 2, WORD_SIZE); // see any other * 2 explanation
+    class->object_instance_template = custom_calloc(class->field_count * 2, WORD_SIZE); // see any other * 2 explanation
 
     for (uint16_t i = 0; i < class->field_count; ++i) {
         MFInfo current_field = read_meth_field_info();
@@ -359,7 +352,7 @@ JavaClass *read_class(char *filename) {
 
     class->method_count = read_uint16();
 
-    class->class_rep = calloc(class->method_count, WORD_SIZE);
+    class->class_rep = custom_calloc(class->method_count, WORD_SIZE);
     // Because we copy class red address, that callocs only here. 
     uint32_t *header = (uint32_t *) class->object_instance_template;
     memcpy(header, &class->class_rep, WORD_SIZE);
@@ -400,7 +393,7 @@ JavaClass *read_class(char *filename) {
     runtime.statics_map[runtime.max_statics_map_index].type = MAP_TYPE_MAP;
     runtime.max_statics_map_index++;
 
-    MapEntry *temp_map = calloc(class->field_count * 2 + class->method_count,
+    MapEntry *temp_map = custom_calloc(class->field_count * 2 + class->method_count,
                                 sizeof(MapEntry)); // * 2 because we have no idea if they would be long/double or normal guys
     // (though we know, but too inefficient to count them)
     memcpy(temp_map, class->class_map, class->max_class_map_index * sizeof(MapEntry));
@@ -408,14 +401,16 @@ JavaClass *read_class(char *filename) {
     class->class_map = temp_map;
 
     class->attribute_count = read_uint16();
-    class->attributes = calloc(class->attribute_count, sizeof(AttributeInfo));
+    class->attributes = custom_calloc(class->attribute_count, sizeof(AttributeInfo));
     for (uint16_t i = 0; i < class->attribute_count; ++i) {
         class->attributes[i] = read_attribute_info();
     }
 
+#ifdef X86
     long bytes_read = ftell(filepointer);
     fseek(filepointer, 0L, SEEK_END);
     long bytes_total = ftell(filepointer);
+#endif
 
     char *class_name = get_constant_pool_entry_name(class, class->this);
     char *fullname = combine_names_with_dot("CL", class_name);
@@ -432,8 +427,10 @@ JavaClass *read_class(char *filename) {
     runtime.max_statics_table_offset += WORD_SIZE;
     runtime.max_statics_map_index++;
 
+#ifdef X86
     printf("Bytes read: %ld, bytes total: %ld \n", bytes_read, bytes_total);
-    fclose(filepointer);
+#endif
+    custom_fclose(filepointer);
 
     // run clinit
     fullname = combine_names_with_dot(class_name, "<clinit>");
@@ -446,63 +443,63 @@ JavaClass *read_class(char *filename) {
     return class;
 }
 
-
-// DEBUG FUNCTIONS
-#ifdef X86
-void debug_print_statics_table() {
-    printf("STATICS_TABLE\n");
-    unsigned int *ptr = malloc(4);
-    for (uint32_t i = 0; i < runtime.max_statics_table_offset; i = i + 4) {
-        memcpy(ptr, &(runtime.statics_table[i]), 4);
-//        printf("%p\t", *ptr);
-        printf("%u\n", *ptr);
-    }
-    free(ptr);
-    printf("\n");
-}
-
-void debug_print_statics_map() {
-    printf("STATICS_MAP\n");
-    for (uint32_t i = 0; i < runtime.max_statics_map_index; i++) {
-        printf("%s %d %d\n", runtime.statics_map[i].name, runtime.statics_map[i].type, runtime.statics_map[i].offset);
-    }
-    printf("\n");
-}
-
-// DEBUG FUNCTIONS
-void debug_print_rep(JavaClass *class) {
-    printf("%s REP\n", get_constant_pool_entry_name(class, class->this));
-    unsigned int *ptr = malloc(4);
-    for (uint32_t i = 0; i < class->max_class_rep_offset; i = i + 4) {
-        memcpy(ptr, &class->class_rep[i], 4);
-//        printf("%p\n", *ptr);
-        printf("%d\n", *ptr);
-    }
-    free(ptr);
-    printf("\n");
-}
-
-void debug_print_map(JavaClass *class) {
-    printf("%s MAP\n", get_constant_pool_entry_name(class, class->this));
-    for (uint32_t i = 0; i < class->max_class_map_index; i++) {
-        printf("%s %d %d\n", class->class_map[i].name, class->class_map[i].type, class->class_map[i].offset);
-    }
-    printf("\n");
-}
-
-
-// DEBUG FUNCTIONS
-void debug_print_obj_tmpl(JavaClass *class) {
-    printf("%s obj template\n", get_constant_pool_entry_name(class, class->this));
-    unsigned int *ptr = malloc(4);
-    memcpy(ptr, &class->object_instance_template[0], 4);
-//    printf("%p\n", *ptr);
-    printf("%d\n", *ptr);
-    for (uint32_t i = 1; i < class->max_class_field_offset; i = i + 4) {
-        memcpy(ptr, &class->object_instance_template[i], 4);
-        printf("%d\n", *ptr);
-    }
-    free(ptr);
-    printf("\n");
-}
-#endif
+//
+//// DEBUG FUNCTIONS
+//#ifdef X86
+//void debug_print_statics_table() {
+//    printf("STATICS_TABLE\n");
+//    unsigned int *ptr = malloc(4);
+//    for (uint32_t i = 0; i < runtime.max_statics_table_offset; i = i + 4) {
+//        memcpy(ptr, &(runtime.statics_table[i]), 4);
+////        printf("%p\t", *ptr);
+//        printf("%u\n", *ptr);
+//    }
+//    free(ptr);
+//    printf("\n");
+//}
+//
+//void debug_print_statics_map() {
+//    printf("STATICS_MAP\n");
+//    for (uint32_t i = 0; i < runtime.max_statics_map_index; i++) {
+//        printf("%s %d %d\n", runtime.statics_map[i].name, runtime.statics_map[i].type, runtime.statics_map[i].offset);
+//    }
+//    printf("\n");
+//}
+//
+//// DEBUG FUNCTIONS
+//void debug_print_rep(JavaClass *class) {
+//    printf("%s REP\n", get_constant_pool_entry_name(class, class->this));
+//    unsigned int *ptr = malloc(4);
+//    for (uint32_t i = 0; i < class->max_class_rep_offset; i = i + 4) {
+//        memcpy(ptr, &class->class_rep[i], 4);
+////        printf("%p\n", *ptr);
+//        printf("%d\n", *ptr);
+//    }
+//    free(ptr);
+//    printf("\n");
+//}
+//
+//void debug_print_map(JavaClass *class) {
+//    printf("%s MAP\n", get_constant_pool_entry_name(class, class->this));
+//    for (uint32_t i = 0; i < class->max_class_map_index; i++) {
+//        printf("%s %d %d\n", class->class_map[i].name, class->class_map[i].type, class->class_map[i].offset);
+//    }
+//    printf("\n");
+//}
+//
+//
+//// DEBUG FUNCTIONS
+//void debug_print_obj_tmpl(JavaClass *class) {
+//    printf("%s obj template\n", get_constant_pool_entry_name(class, class->this));
+//    unsigned int *ptr = malloc(4);
+//    memcpy(ptr, &class->object_instance_template[0], 4);
+////    printf("%p\n", *ptr);
+//    printf("%d\n", *ptr);
+//    for (uint32_t i = 1; i < class->max_class_field_offset; i = i + 4) {
+//        memcpy(ptr, &class->object_instance_template[i], 4);
+//        printf("%d\n", *ptr);
+//    }
+//    free(ptr);
+//    printf("\n");
+//}
+//#endif

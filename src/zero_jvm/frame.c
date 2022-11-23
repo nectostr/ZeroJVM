@@ -39,7 +39,7 @@ descriptor2params(const char *descriptor, uint32_t *current_stack, uint16_t curr
         }
     }
 
-    uint32_t *params = calloc(words + 1, sizeof(uint32_t));
+    uint32_t *params = custom_calloc(words + 1, sizeof(uint32_t));
     params[0] = words;
     for (uint32_t i = 0; i < words; i++) {
         memcpy(&params[words - i], &current_stack[current_stack_pointer - i - 1], WORD_SIZE);
@@ -54,10 +54,10 @@ Frame initialize_frame(JavaClass *current_class, uint8_t *bytecode, uint16_t par
     frame.bytecode = bytecode;
 
     uint16_t maxstack = (uint16_t) bytecode[0] << 8 | (uint16_t) bytecode[1];
-    frame.stack = calloc(maxstack, sizeof(uint32_t));
+    frame.stack = custom_calloc(maxstack, sizeof(uint32_t));
 
     uint16_t maxlocals = (uint16_t) bytecode[2] << 8 | (uint16_t) bytecode[3];
-    frame.locals = calloc(maxlocals, sizeof(uint32_t));
+    frame.locals = custom_calloc(maxlocals, sizeof(uint32_t));
     memcpy(frame.locals, params, params_words * WORD_SIZE);
 
     frame.bytecode_length = (uint32_t) bytecode[4] << 24 | (uint32_t) bytecode[5] << 16 |
@@ -327,7 +327,7 @@ uint32_t *execute_frame(Frame *frame) {
                                                      find_static_record(fullname, 0, MAP_TYPE_CL)));
                 free(fullname);
 
-                uint32_t *template = (uint32_t *) calloc(class->field_count * 2, WORD_SIZE);
+                uint32_t *template = (uint32_t *) custom_calloc(class->field_count * 2, WORD_SIZE);
                 memcpy(template, class->object_instance_template, class->field_count * 2 * WORD_SIZE);
 
                 memcpy(&frame->stack[stack_pointer++], &template, sizeof(template));
@@ -406,14 +406,14 @@ uint32_t *execute_frame(Frame *frame) {
             }
             case 0xac: // ireturn
                 // TODO: make sure stack clean?   
-                result_pointer = calloc(1, WORD_SIZE);
+                result_pointer = custom_calloc(1, WORD_SIZE);
                 memcpy(result_pointer, &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
             case 0xb1: // return
-                result_pointer = calloc(1, WORD_SIZE);
+                result_pointer = custom_calloc(1, WORD_SIZE);
                 break;
             case 0xad: // lreturn
-                result_pointer = calloc(1, WORD_SIZE);
+                result_pointer = custom_calloc(1, WORD_SIZE);
                 memcpy(result_pointer, &frame->stack[--stack_pointer], WORD_SIZE);
                 memcpy(result_pointer + WORD_SIZE, &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
