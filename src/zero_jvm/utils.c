@@ -5,6 +5,9 @@
 
 #ifdef X86
 void *custom_calloc (size_t nmemb, size_t size) {
+    if (nmemb == 0 || size == 0) {
+        return NULL;
+    }
     return calloc(nmemb, size);
 }
 FILE *custom_fopen (const char *__restrict filename, const char *__restrict modes) {
@@ -16,11 +19,18 @@ int custom_fclose (FILE *stream) {
 size_t custom_fread (void *__restrict ptr, size_t size, size_t n, FILE *__restrict stream) {
     return fread(ptr, size, n, stream);
 }
+
+void FURI_LOG_I(const char* tag, const char* format, ...) {
+    printf("%s: %s", tag, format);
+}
 #endif
 #ifndef X86
 File* entrypointfile;
 
 void *custom_calloc (size_t nmemb, size_t size) {
+    if (nmemb == 0 || size == 0) {
+        return NULL;
+    }
     return malloc(nmemb * size);  // on flipper zero malloc == calloc
 }
 FILE *custom_fopen (const char *__restrict filename, const char *__restrict modes) {

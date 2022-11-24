@@ -1,4 +1,4 @@
-#define FILENAME "Simple.class"
+#define FILENAME "/ext/Simple.class"
 
 #include <furi.h>
 #include <gui/gui.h>

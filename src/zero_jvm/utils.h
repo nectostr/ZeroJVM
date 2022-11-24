@@ -3,6 +3,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+
+#ifdef X86
+void FURI_LOG_I(const char* tag, const char* format, ...);
+#endif
 #ifndef X86
 #include <storage/storage.h>
 extern File* entrypointfile;

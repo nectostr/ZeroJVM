@@ -393,8 +393,7 @@ JavaClass *read_class(char *filename) {
     runtime.statics_map[runtime.max_statics_map_index].type = MAP_TYPE_MAP;
     runtime.max_statics_map_index++;
 
-    MapEntry *temp_map = custom_calloc(class->field_count * 2 + class->method_count,
-                                sizeof(MapEntry)); // * 2 because we have no idea if they would be long/double or normal guys
+    MapEntry *temp_map = custom_calloc(class->field_count + class->method_count, sizeof(MapEntry));
     // (though we know, but too inefficient to count them)
     memcpy(temp_map, class->class_map, class->max_class_map_index * sizeof(MapEntry));
     free(class->class_map);
