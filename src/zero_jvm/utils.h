@@ -8,8 +8,23 @@
 void FURI_LOG_I(const char* tag, const char* format, ...);
 #endif
 #ifndef X86
+#include <furi.h>
+#include <gui/gui.h>
 #include <storage/storage.h>
 extern File* entrypointfile;
+
+typedef struct {
+    ViewPort* view_port;
+    Gui* gui;
+    char* display_text;
+    FuriMutex* model_mutex;
+} Application;
+
+extern Application* instance;
+
+void app_draw_callback(Canvas* canvas, void* context);
+Application* app_allocator();
+void app_deallocator();
 #endif
 
 
@@ -17,6 +32,7 @@ void *custom_calloc (size_t nmemb, size_t size);
 FILE *custom_fopen (const char *__restrict filename, const char *__restrict modes);
 int custom_fclose (FILE *stream);
 size_t custom_fread (void *__restrict ptr, size_t size, size_t n, FILE *__restrict stream);
+void println(const char* string);
 
 
 typedef struct {

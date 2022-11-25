@@ -14,9 +14,6 @@ descriptor2params(const char *descriptor, uint32_t *current_stack, uint16_t curr
                     words++;
                     flag = 2;
                     break;
-                case ';':
-                    flag = 1;
-                    break;
                 case ')':
                     flag = 0;
                     break;
@@ -35,8 +32,12 @@ descriptor2params(const char *descriptor, uint32_t *current_stack, uint16_t curr
                 default:
                     break;
             }
-            descriptor++;
+        } else if (flag == 2) {
+            if (*descriptor == ';') {
+                flag = 1;
+            }
         }
+        descriptor++;
     }
 
     uint32_t *params = custom_calloc(words + 1, sizeof(uint32_t));
@@ -101,7 +102,17 @@ uint32_t *execute_frame(Frame *frame) {
             {
                 uint8_t index = frame->bytecode[++frame->instruction_pointer];
                 ConstantPoolEntry *data = &frame->current_class->constant_pool[index];
-                memcpy(&frame->stack[stack_pointer++], &data->data.uint, WORD_SIZE);
+                switch (data->tag) {
+                    case 3:
+                    case 4:
+                        memcpy(&frame->stack[stack_pointer++], &data->data.uint, WORD_SIZE);
+                        break;
+                    case 8:
+                        memcpy(&frame->stack[stack_pointer++], &data->data.ushort, 2);
+                        break;
+                    default:
+                        break;
+                }
                 break;
             }
             case 0xa5:  // if_acmpeq
@@ -297,9 +308,13 @@ uint32_t *execute_frame(Frame *frame) {
                 stack_pointer++;
                 break;
             case 0x11: // sipush
-                memcpy(&frame->stack[stack_pointer++], &frame->bytecode[frame->instruction_pointer + 1], 2);
+            {
+                uint16_t val = frame->bytecode[frame->instruction_pointer + 1] << 8 |
+                               frame->bytecode[frame->instruction_pointer + 2];
+                memcpy(&frame->stack[stack_pointer++], &val, 2);
                 frame->instruction_pointer += 2;
                 break;
+            }
             case 0x57: // pop
                 stack_pointer--;
                 break;
@@ -376,11 +391,32 @@ uint32_t *execute_frame(Frame *frame) {
                     free(fullname);
                     break;
                 }
+                if (strcmp(fullname, "Entrypoint.beep") == 0) {
+                    // custom beep function
+                    break;
+                }
+                if (strcmp(fullname, "Entrypoint.delay") == 0) {
+
+#ifndef X86
+                    FURI_LOG_I("Entrypoint", "Delay %ld", params[1]);
+                    furi_delay_ms(params[1]);
+                    FURI_LOG_I("Entrypoint", "Delay %ld finished", params[1]);
+#endif
+                    break;
+                }
 
                 char *target_class_name = combine_names_with_dot("CL", classname);
                 JavaClass *class = *((JavaClass **) (runtime.statics_table +
                                                      find_static_record(target_class_name, 0, MAP_TYPE_CL)));
                 free(target_class_name);
+
+                if (strcmp(fullname, "Entrypoint.println") == 0) {
+                    free(fullname);
+                    printf("Entering println");
+                    char *string = class->constant_pool[params[1]].addon;
+                    println(string);
+                    break;
+                }
 
                 uint8_t **new_method_code = NULL;
                 if (op == 0xba || op == 0xb6) {
