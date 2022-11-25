@@ -34,13 +34,9 @@ Application* instance;
 
 void app_draw_callback(Canvas* canvas, void* context) {
     Application* app = context;
-    FURI_LOG_I("ZERO_JVM", "get mutex");
     furi_check(furi_mutex_acquire(app->model_mutex, FuriWaitForever) == FuriStatusOk);
-    FURI_LOG_I("ZERO_JVM", "received mutex");
     canvas_draw_str_aligned(canvas, 64, 32, AlignCenter, AlignCenter, app->display_text);
-    FURI_LOG_I("ZERO_JVM", "release mutex");
     furi_mutex_release(app->model_mutex);
-    FURI_LOG_I("ZERO_JVM", "mutex released");
 }
 
 Application* app_allocator() {

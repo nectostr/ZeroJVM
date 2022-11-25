@@ -88,7 +88,7 @@ uint32_t *execute_frame(Frame *frame) {
             case 0x08: // iconst_x
             {
                 int val = op - 0x03;
-                memcpy(&frame->stack[stack_pointer++], &val, sizeof(val));
+                memcpy(&frame->stack[stack_pointer++], &val, WORD_SIZE);
                 break;
             }
             case 0x0b:  // fconst_0
@@ -108,8 +108,11 @@ uint32_t *execute_frame(Frame *frame) {
                         memcpy(&frame->stack[stack_pointer++], &data->data.uint, WORD_SIZE);
                         break;
                     case 8:
-                        memcpy(&frame->stack[stack_pointer++], &data->data.ushort, 2);
+                    {
+                        uint32_t val = data->data.ushort;
+                        memcpy(&frame->stack[stack_pointer++], &val, WORD_SIZE);
                         break;
+                    }
                     default:
                         break;
                 }
@@ -236,8 +239,8 @@ uint32_t *execute_frame(Frame *frame) {
             {
                 int val1 = 0;
                 int val2 = 0;
-                memcpy(&val1, &frame->stack[stack_pointer - 1], sizeof(val1));
-                memcpy(&val2, &frame->stack[stack_pointer - 2], sizeof(val2));
+                memcpy(&val1, &frame->stack[stack_pointer - 1], WORD_SIZE);
+                memcpy(&val2, &frame->stack[stack_pointer - 2], WORD_SIZE);
                 switch (op) {
                     case 0x60:
                         val1 = val1 + val2;
@@ -263,7 +266,7 @@ uint32_t *execute_frame(Frame *frame) {
                     default:
                         break;
                 }
-                memcpy(&frame->stack[stack_pointer - 2], &val1, sizeof(val1));
+                memcpy(&frame->stack[stack_pointer - 2], &val1, WORD_SIZE);
                 stack_pointer--;
                 break;
             }
@@ -304,14 +307,17 @@ uint32_t *execute_frame(Frame *frame) {
                        WORD_SIZE);
                 break;
             case 0x10: // bipush
-                memcpy(&frame->stack[stack_pointer], &frame->bytecode[++frame->instruction_pointer], 1);
+            {
+                int32_t val = frame->bytecode[++frame->instruction_pointer];
+                memcpy(&frame->stack[stack_pointer], &val, WORD_SIZE);
                 stack_pointer++;
                 break;
+            }
             case 0x11: // sipush
             {
-                uint16_t val = frame->bytecode[frame->instruction_pointer + 1] << 8 |
+                int32_t val = frame->bytecode[frame->instruction_pointer + 1] << 8 |
                                frame->bytecode[frame->instruction_pointer + 2];
-                memcpy(&frame->stack[stack_pointer++], &val, 2);
+                memcpy(&frame->stack[stack_pointer++], &val, WORD_SIZE);
                 frame->instruction_pointer += 2;
                 break;
             }
@@ -345,7 +351,7 @@ uint32_t *execute_frame(Frame *frame) {
                 uint32_t *template = (uint32_t *) custom_calloc(class->field_count * 2, WORD_SIZE);
                 memcpy(template, class->object_instance_template, class->field_count * 2 * WORD_SIZE);
 
-                memcpy(&frame->stack[stack_pointer++], &template, sizeof(template));
+                memcpy(&frame->stack[stack_pointer++], &template, WORD_SIZE);
                 break;
             }
             case 0xb6:  // invokevirtual
@@ -393,14 +399,24 @@ uint32_t *execute_frame(Frame *frame) {
                 }
                 if (strcmp(fullname, "Entrypoint.beep") == 0) {
                     // custom beep function
+                    float freq = *(float *) &params[1];
+                    int duration = *(int *) &params[2];
+#ifndef X86
+                    furi_check(furi_mutex_acquire(instance->model_mutex, FuriWaitForever) == FuriStatusOk);
+                    FURI_LOG_I("ZERO_JVM", "Frequency %d.%.6d", (int)freq, (int)((freq-(int)freq)*1000000));
+                    furi_hal_speaker_start(freq, 1.0f);
+                    furi_delay_ms(duration);
+                    furi_hal_speaker_stop();
+                    FURI_LOG_I("ZERO_JVM", "Frequency %d.%.6d finished", (int)freq, (int)((freq-(int)freq)*1000000));
+                    furi_mutex_release(instance->model_mutex);
+                    FURI_LOG_I("ZERO_JVM", "mutex released");
+#endif
                     break;
                 }
                 if (strcmp(fullname, "Entrypoint.delay") == 0) {
 
 #ifndef X86
-                    FURI_LOG_I("Entrypoint", "Delay %ld", params[1]);
                     furi_delay_ms(params[1]);
-                    FURI_LOG_I("Entrypoint", "Delay %ld finished", params[1]);
 #endif
                     break;
                 }

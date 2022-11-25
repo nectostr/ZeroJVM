@@ -8,6 +8,7 @@
 void FURI_LOG_I(const char* tag, const char* format, ...);
 #endif
 #ifndef X86
+#include <furi_hal.h>
 #include <furi.h>
 #include <gui/gui.h>
 #include <storage/storage.h>
