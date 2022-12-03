@@ -399,9 +399,9 @@ uint32_t *execute_frame(Frame *frame) {
                 }
                 if (strcmp(fullname, "Entrypoint.beep") == 0) {
                     // custom beep function
+#ifndef X86
                     float freq = *(float *) &params[1];
                     int duration = *(int *) &params[2];
-#ifndef X86
                     furi_check(furi_mutex_acquire(instance->model_mutex, FuriWaitForever) == FuriStatusOk);
                     FURI_LOG_I("ZERO_JVM", "Frequency %d.%.6d", (int)freq, (int)((freq-(int)freq)*1000000));
                     furi_hal_speaker_start(freq, 1.0f);
