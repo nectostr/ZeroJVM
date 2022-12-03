@@ -19,7 +19,7 @@ class Entrypoint {
         Entrypoint e1 = new Entrypoint();
         Entrypoint e2 = new Entrypoint();
         e1.field2 = 5;
-        Entrypoint.println(Entrypoint.meth1(5), e1.meth2(1, 2, 3), e2.meth2(1, 2, 3));
+        Entrypoint.println("", Entrypoint.meth1(5), e1.meth2(1, 2, 3), e2.meth2(1, 2, 3));
         Entrypoint.delay(3000);
     }
 }

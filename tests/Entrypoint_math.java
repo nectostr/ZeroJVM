@@ -7,9 +7,9 @@ class Entrypoint {
 
         Entrypoint.println("Hello, world!");
         Entrypoint.delay(3000);
-        Entrypoint.println(c);
+        Entrypoint.println("" + c);
         Entrypoint.delay(5000);
-        Entrypoint.println(2567*0 + 0 - 9);
+        Entrypoint.println("" + (2567*0 + 0 - 9));
         Entrypoint.delay(5000);
     }
 }
