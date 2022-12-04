@@ -307,15 +307,16 @@ uint32_t *execute_frame(Frame *frame) {
                 break;
             case 0x10: // bipush
             {
-                int32_t val = frame->bytecode[++frame->instruction_pointer];
+                int32_t val = *(int8_t *) &frame->bytecode[++frame->instruction_pointer];
                 memcpy(&frame->stack[stack_pointer], &val, WORD_SIZE);
                 stack_pointer++;
                 break;
             }
             case 0x11: // sipush
             {
-                int32_t val = frame->bytecode[frame->instruction_pointer + 1] << 8 |
+                uint32_t preval = frame->bytecode[frame->instruction_pointer + 1] << 8 |
                               frame->bytecode[frame->instruction_pointer + 2];
+                int32_t val = *(int16_t *) &preval;
                 memcpy(&frame->stack[stack_pointer++], &val, WORD_SIZE);
                 frame->instruction_pointer += 2;
                 break;
