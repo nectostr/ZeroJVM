@@ -1,44 +1,162 @@
 class Entrypoint {
-    static int field1 = 4;
-    static int fielda = 5;
-    int field2 = 3;
-    int field3 = 7;
-    static int field4;
-    static int m1(int a) {
-        return a + 9;
-    }
-    int m2(int a, int b, int c) {
-        return a + b * c;
-    }
-    void m3() {
-        this.field2 = 5;
-    }
-    Entrypoint(int a) {
-        this.field3 = a;
-    }
-
     public static void println(String s) {}
     public static void beep(float frequency, int duration) {}
     public static void delay(int duration_ms) {}
-
+/*
+2G4, 2F#4, 2E4, 2E4, 2F#4, P...., 
+2A3, 2G4, 2F#4, 2E4, E4, 2F#4, P,
+ D4, 2E4, A3, P...,
+  2A3, E4, 2F#4, G4.., 
+  2E4, C#4, D4, E4, 2A3, A3, F#4, P...., 
+  2G4, 2F#4, 2E4, 2E4, 2F#4, P...., 
+  2A3, 2G4, 2F#4, 2E4, E4, 2P, 
+  2F#4, D4, 2P, 2E4, A3, P..., 
+  E4, 2F#4, G4., 2E4, C#4., 
+  2D4, E4, 4P, 2A3, 2D4, 2E4,
+   2F4, 2E4, 2D4, 2C4, P, 2A3, 
+   2A#3, C4, F4, 2E4, 2D4, 2D4,
+    2C4, 2D4, 2C4, C4, C4, 2A3, 
+    2A#3, C4, F4, 2G4, 2F4, 2E4, 
+    2D4, 2D4, 2E4, F4, F4, 2G4, 2A4,
+     2A#4, 2A#4, A4, G4, 2F4, 2G4, 2A4,
+      2A4, G4, F4, 2D4, 2C4, 2D4, 2F4,
+       2F4, E4, 2E4, 2F#4, F#4..., P..
+*/
     public static void main(String argv[]) {
-        Entrypoint.println("Hello, world!");
-        Entrypoint.delay(3000);
-        Entrypoint.println("This is a working message!");
-        Entrypoint.delay(3000);
-        Entrypoint.println("Never gonna give you up");
-        Entrypoint.beep(440, 1000);
+        Entrypoint.println("The cake is not a lie! ^_^");
         Entrypoint.delay(1000);
-        Entrypoint.println("Never gonna let you down");
-        Entrypoint.beep(250, 1000);
-        Entrypoint.delay(1000);
-        Entrypoint.println("Never gonna run around and desert you");
-        Entrypoint.delay(1000);
-        Entrypoint.println("Never gonna make you cry");
-        Entrypoint.delay(1000);
-        Entrypoint.println("Never gonna say goodbye");
-        Entrypoint.delay(1000);
-        Entrypoint.println("Never gonna tell a lie and hurt you");
-        Entrypoint.delay(5000);
+        // 4th octave
+        // Entrypoint.beep(392, 250);
+        // Entrypoint.beep(370, 250);
+        // Entrypoint.beep(329.6f, 250);
+        // Entrypoint.beep(329.6f, 250);
+        // Entrypoint.beep(370, 250);
+        // Entrypoint.delay(250);
+        // 5th octave
+        // G5
+        Entrypoint.beep(783.99f, 250);
+        // F#5
+        Entrypoint.beep(739.99f, 250); 
+        // E5
+        Entrypoint.beep(659.25f, 250);
+        Entrypoint.delay(10);
+        // E5
+        Entrypoint.beep(659.25f, 250); 
+        // F#5
+        Entrypoint.beep(739.99f, 250);
+        Entrypoint.delay(250*10);
+        // A4
+        Entrypoint.beep(440.0f, 250); 
+        // G5 
+        Entrypoint.beep(783.99f, 250); 
+        // F#5
+        Entrypoint.beep(739.99f, 250);  
+        // E5 
+        Entrypoint.beep(659.25f, 250); 
+        Entrypoint.delay(10);
+        // E5
+        Entrypoint.beep(659.25f, 3*250);   
+        // F#5  
+        Entrypoint.beep(739.99f, 250); 
+        // D5
+        Entrypoint.beep(587.33f, 3*250); 
+        // E5
+        Entrypoint.beep(659.25f, 250);  
+        // A4
+        Entrypoint.beep(440.0f, 4*250); 
+        Entrypoint.delay(250*5);
+
+        // A4
+        Entrypoint.beep(440.0f, 250);
+        // E5
+        Entrypoint.beep(659.25f, 2*250);
+        // F#5
+        Entrypoint.beep(739.99f, 250);
+        // G5
+        Entrypoint.beep(783.99f, 3*250);
+        // E5
+        Entrypoint.beep(659.25f, 250);
+        // C#5
+        Entrypoint.beep(554.37f, 3*250);
+        // D5
+        Entrypoint.beep(587.33f, 250);
+        // E5
+        Entrypoint.beep(659.25f, 3*250);
+        // A4
+        Entrypoint.beep(440.0f, 250);
+        Entrypoint.delay(10);
+        // A4
+        Entrypoint.beep(440.0f, 2*250);
+        // F#5
+        Entrypoint.beep(739.99f, 3*250);
+
+        Entrypoint.delay(250*8);
+
+        // 2nd quadrant
+        // G5
+        Entrypoint.beep(783.99f, 250);
+        // F#5
+        Entrypoint.beep(739.99f, 250); 
+        // E5
+        Entrypoint.beep(659.25f, 250);
+        Entrypoint.delay(10);
+        // E5
+        Entrypoint.beep(659.25f, 250); 
+        // F#5
+        Entrypoint.beep(739.99f, 250);
+        Entrypoint.delay(250*10);
+        // A4
+        Entrypoint.beep(440.0f, 250); 
+        // G5 
+        Entrypoint.beep(783.99f, 250); 
+        // F#5
+        Entrypoint.beep(739.99f, 250);  
+        // E5 
+        Entrypoint.beep(659.25f, 250); 
+        Entrypoint.delay(10);
+        // E5
+        Entrypoint.beep(659.25f, 3*250);   
+        // F#5  
+        Entrypoint.beep(739.99f, 250); 
+        // D5
+        Entrypoint.beep(587.33f, 3*250); 
+        // E5
+        Entrypoint.beep(659.25f, 250);  
+        // A4
+        Entrypoint.beep(440.0f, 4*250); 
+        Entrypoint.delay(250*4);
+
+        // A4
+        Entrypoint.beep(440.0f, 250);
+        // E5
+        Entrypoint.beep(659.25f, 2*250);
+        // F#5
+        Entrypoint.beep(739.99f, 250);
+        // G5
+        Entrypoint.beep(783.99f, 3*250);
+        // E5
+        Entrypoint.beep(659.25f, 250);
+        // C#5
+        Entrypoint.beep(554.37f, 3*250);
+        // D5
+        Entrypoint.beep(587.33f, 250);
+        // E5
+        Entrypoint.beep(659.25f, 2*250);
+        // A4
+        Entrypoint.beep(440.0f, 250);
+        // D5
+        Entrypoint.beep(587.33f, 250);
+        // E5
+        Entrypoint.beep(659.25f, 250);
+        // F5
+        Entrypoint.beep(698.46f, 250);
+        // E5
+        Entrypoint.beep(659.25f, 250);
+        // D5
+        Entrypoint.beep(587.33f, 250);
+        // C5
+        Entrypoint.beep(523.25f, 250);
+        // correct
+        // chorus
     }
 }
