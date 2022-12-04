@@ -58,8 +58,12 @@ Frame initialize_frame(JavaClass *current_class, uint8_t *bytecode, uint16_t par
     frame.stack = custom_calloc(maxstack, sizeof(uint32_t));
 
     uint16_t maxlocals = (uint16_t) bytecode[2] << 8 | (uint16_t) bytecode[3];
-    frame.locals = custom_calloc(maxlocals, sizeof(uint32_t));
-    memcpy(frame.locals, params, params_words * WORD_SIZE);
+    if (maxlocals > 0) {
+        frame.locals = custom_calloc(maxlocals, sizeof(uint32_t));
+        memcpy(frame.locals, params, params_words * WORD_SIZE);
+    } else {
+        frame.locals = NULL;
+    }
 
     frame.bytecode_length = (uint32_t) bytecode[4] << 24 | (uint32_t) bytecode[5] << 16 |
                             (uint32_t) bytecode[6] << 8 | (uint32_t) bytecode[7];
@@ -373,7 +377,7 @@ uint32_t *execute_frame(Frame *frame) {
                 break;
             case 0x86: // i2f
             {
-                uint32_t val = 0;
+                int32_t val = 0;
                 memcpy(&val, &frame->stack[stack_pointer - 1], WORD_SIZE);
                 float fval = (float) val;
                 memcpy(&frame->stack[stack_pointer - 1], &fval, WORD_SIZE);
@@ -383,7 +387,7 @@ uint32_t *execute_frame(Frame *frame) {
             {
                 float val = 0;
                 memcpy(&val, &frame->stack[stack_pointer - 1], WORD_SIZE);
-                uint32_t ival = (uint32_t) val;
+                int32_t ival = (int32_t) val;
                 memcpy(&frame->stack[stack_pointer - 1], &ival, WORD_SIZE);
                 break;
             }
@@ -652,7 +656,8 @@ uint32_t *execute_frame(Frame *frame) {
         printf("Frame pointer != frame bytecode length in the end of frame execution\n");
     }
     free(frame->stack);
-    free(frame->locals);
-
+    if (frame->locals != NULL) {
+        free(frame->locals);
+    }
     return result_pointer;
 }
