@@ -269,6 +269,35 @@ uint32_t *execute_frame(Frame *frame) {
                 stack_pointer--;
                 break;
             }
+            case 0x62: //fadd
+            case 0x66: //fsub
+            case 0x6a: //fmul
+            case 0x6e: //fdiv
+            {
+                float val1 = 0;
+                float val2 = 0;
+                memcpy(&val1, &frame->stack[stack_pointer - 1], WORD_SIZE);
+                memcpy(&val2, &frame->stack[stack_pointer - 2], WORD_SIZE);
+                switch (op) {
+                    case 0x62:
+                        val1 = val1 + val2;
+                        break;
+                    case 0x66:
+                        val1 = val2 - val1;
+                        break;
+                    case 0x6a:
+                        val1 = val1 * val2;
+                        break;
+                    case 0x6e:
+                        val1 = val2 / val1;
+                        break;
+                    default:
+                        break;
+                }
+                memcpy(&frame->stack[stack_pointer - 2], &val1, WORD_SIZE);
+                stack_pointer--;
+                break;
+            }
             case 0x2a: // aload_0
             case 0x2b: // aload_1
             case 0x2c: // aload_2
@@ -280,6 +309,12 @@ uint32_t *execute_frame(Frame *frame) {
             case 0x1c: // iload_2
             case 0x1d: // iload_3
                 memcpy(&frame->stack[stack_pointer++], &frame->locals[op - 0x1a], WORD_SIZE);
+                break;
+            case 0x22: // fload_0
+            case 0x23: // fload_1
+            case 0x24: // fload_2
+            case 0x25: // fload_3
+                memcpy(&frame->stack[stack_pointer++], &frame->locals[op - 0x22], WORD_SIZE);
                 break;
             case 0x3b: // istore_0
             case 0x3c: // istore_1
@@ -293,14 +328,22 @@ uint32_t *execute_frame(Frame *frame) {
             case 0x4e: // astore_3
                 memcpy(&frame->locals[op - 0x4b], &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
+            case 0x43: // fstore_0
+            case 0x44: // fstore_1
+            case 0x45: // fstore_2
+            case 0x46: // fstore_3
+                memcpy(&frame->locals[op - 0x43], &frame->stack[--stack_pointer], WORD_SIZE);
+                break;
             case 0x3a: // astore
             case 0x36: // istore
+            case 0x38: // fstore
                 frame->instruction_pointer++;
                 memcpy(&frame->locals[frame->bytecode[frame->instruction_pointer]], &frame->stack[--stack_pointer],
                        WORD_SIZE);
                 break;
             case 0x19: // aload
             case 0x15: // iload
+            case 0x17: // fload
                 frame->instruction_pointer++;
                 memcpy(&frame->stack[stack_pointer++], &frame->locals[frame->bytecode[frame->instruction_pointer]],
                        WORD_SIZE);
@@ -328,6 +371,22 @@ uint32_t *execute_frame(Frame *frame) {
                 memcpy(&frame->stack[stack_pointer], &frame->stack[stack_pointer - 1], WORD_SIZE);
                 stack_pointer++;
                 break;
+            case 0x86: // i2f
+            {
+                uint32_t val = 0;
+                memcpy(&val, &frame->stack[stack_pointer - 1], WORD_SIZE);
+                float fval = (float) val;
+                memcpy(&frame->stack[stack_pointer - 1], &fval, WORD_SIZE);
+                break;
+            }
+            case 0x8b: // f2i
+            {
+                float val = 0;
+                memcpy(&val, &frame->stack[stack_pointer - 1], WORD_SIZE);
+                uint32_t ival = (uint32_t) val;
+                memcpy(&frame->stack[stack_pointer - 1], &ival, WORD_SIZE);
+                break;
+            }
             case 0xbb: // new
             {
                 frame->instruction_pointer += 2;
