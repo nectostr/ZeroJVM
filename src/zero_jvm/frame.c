@@ -426,22 +426,23 @@ uint32_t *execute_frame(Frame *frame) {
                 if (strcmp(fullname, "Entrypoint.println") == 0) {
                     free(fullname);
                     printf("Entering println\n");
+                    const uint16_t capacity = 20;
                     if (strcmp(descriptor, "(I)V") == 0) {
-                        char buffer[20];
+                        char buffer[capacity];
 #ifdef X86
-                        sprintf(buffer, "%d", params[1]);
+                        snprintf(buffer, capacity, "%d", params[1]);
 #endif
 #ifndef X86
-                        sprintf(buffer, "%ld", params[1]);
+                        snprintf(buffer, capacity, "%ld", params[1]);
 #endif
                         println(buffer);
                     } else if (strcmp(descriptor, "(Ljava/lang/String;)V") == 0) {
                         char *string = class->constant_pool[params[1]].addon;
                         println(string);
                     } else if (strcmp(descriptor, "(F)V") == 0) {
-                        char buffer[20];
+                        char buffer[capacity];
                         float val = *(float *) &params[1];
-                        sprintf(buffer, "%d.%.6d", (int)val,   (int)((val-(int)val)*1000000));
+                        snprintf(buffer, capacity, "%d.%.6d", (int)val,   (int)((val-(int)val)*1000000));
                         println(buffer);
                     } else {
                         printf("Unknown descriptor %s", descriptor);

@@ -13,6 +13,6 @@ class Entrypoint {
         Entrypoint var = new Entrypoint();
         Entrypoint.println(var.field1);
 //         Entrypoint.beep(440, 1000);
-//         Entrypoint.delay(10000);
+        Entrypoint.delay(10000);
     }
 }
