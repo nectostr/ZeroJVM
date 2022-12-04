@@ -5,7 +5,9 @@
 set -eu;
 
 # private variables
-SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd -P)";
+DEFAULT_PATH="$(cd "$(dirname "$0")" && pwd -P)";
+SUBFOLDER="unleashed-firmware"
+SCRIPT_PATH="$(cd "$(dirname "$0")" && pwd -P)/${SUBFOLDER}";
 SCONS_DEFAULT_FLAGS="-Q --warn=target-not-built";
 SCONS_EP="python3 -m SCons"
 
@@ -19,7 +21,7 @@ if [ -z "$FBT_NOENV" ]; then
 fi
 
 if [ -z "$FBT_NO_SYNC" ]; then
-    if [ ! -d "$SCRIPT_PATH/.git" ]; then
+    if [ ! -d "$DEFAULT_PATH/.git" ]; then
         echo "\".git\" directory not found, please clone repo via \"git clone --recursive\"";
         exit 1;
     fi
