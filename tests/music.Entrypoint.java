@@ -1,5 +1,5 @@
 class Entrypoint {
-    int field1 = 4;
+    float field1 = 4.12431134f;
     Entrypoint() {}
 
     public static void println(String s) {}
