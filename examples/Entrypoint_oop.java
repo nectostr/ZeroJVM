@@ -22,7 +22,9 @@ class Entrypoint {
         Entrypoint e2 = new Entrypoint();
         e1.field2 = 5;
         Entrypoint.println(Entrypoint.meth1(5));
+        Entrypoint.delay(1000);
         Entrypoint.println(e1.meth2(1, 2, 3));
+        Entrypoint.delay(1000);
         Entrypoint.println(e2.meth2(1, 2, 3));
         Entrypoint.delay(3000);
     }

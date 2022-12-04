@@ -4,7 +4,9 @@
 ~ put it with 
 
 ## How to use:
-`javac -d . tests/Simple.java` from the parent directory
+`javac -d . examples/Simple.java` from the parent directory
+
+`javap Entrypoint.class`
 
 
 
