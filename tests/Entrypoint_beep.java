@@ -156,7 +156,111 @@ class Entrypoint {
         Entrypoint.beep(587.33f, 250);
         // C5
         Entrypoint.beep(523.25f, 250);
+        Entrypoint.delay(2*250);
         // correct
+
         // chorus
+        // A4
+        Entrypoint.beep(440.0f, 250);
+        // A#4
+        Entrypoint.beep(466.16f, 250);
+        // C5
+        Entrypoint.beep(523.25f, 2*250);
+        // F5
+        Entrypoint.beep(698.46f, 2*250);
+        // E5
+        Entrypoint.beep(659.25f, 250);
+        // D5
+        Entrypoint.beep(587.33f, 250);
+        Entrypoint.delay(10);
+        // D5
+        Entrypoint.beep(587.33f, 250);
+        // C5
+        Entrypoint.beep(523.25f, 250);
+        // D5
+        Entrypoint.beep(587.33f, 250);
+        // C5
+        Entrypoint.beep(523.25f, 250);
+        Entrypoint.delay(10);
+        // C5
+        Entrypoint.beep(523.25f, 2*250);
+        Entrypoint.delay(10);
+        // C5
+        Entrypoint.beep(523.25f, 2*250);
+
+        // A4
+        Entrypoint.beep(440.0f, 250);
+        // A#4
+        Entrypoint.beep(466.16f, 250);
+        // C5
+        Entrypoint.beep(523.25f, 2*250);
+        // F5
+        Entrypoint.beep(698.46f, 2*250);
+        // G5
+        Entrypoint.beep(783.99f, 250);
+        // F5
+        Entrypoint.beep(698.46f, 250);
+        // E5
+        Entrypoint.beep(659.25f, 250);
+        // D5
+        Entrypoint.beep(587.33f, 250);
+        Entrypoint.delay(10);
+        // D5
+        Entrypoint.beep(587.33f, 250);
+        // E5
+        Entrypoint.beep(659.25f, 250);
+        // F5
+        Entrypoint.beep(698.46f, 2*250);
+        Entrypoint.delay(10);
+        // F5
+        Entrypoint.beep(698.46f, 2*250);
+        // G5
+        Entrypoint.beep(783.99f, 250);
+        // A5
+        Entrypoint.beep(880.0f, 250);
+        // A#5
+        Entrypoint.beep(932.33f, 250);
+        Entrypoint.delay(10);
+        // A#5
+        Entrypoint.beep(932.33f, 250);
+        // A5
+        Entrypoint.beep(880.0f, 2*250);
+        // G5
+        Entrypoint.beep(783.99f, 2*250);
+        // F5
+        Entrypoint.beep(698.46f, 250);
+        // G5
+        Entrypoint.beep(783.99f, 250);
+        // A5
+        Entrypoint.beep(880.0f, 250);
+        Entrypoint.delay(10);
+        // A5
+        Entrypoint.beep(880.0f, 250);
+        // G5
+        Entrypoint.beep(783.99f, 2*250);
+        // F5
+        Entrypoint.beep(698.46f, 2*250);
+
+        // D5
+        Entrypoint.beep(587.33f, 250);
+        // C5
+        Entrypoint.beep(523.25f, 250);
+        // D5
+        Entrypoint.beep(587.33f, 250);
+        // F5
+        Entrypoint.beep(698.46f, 250);
+        Entrypoint.delay(10);
+        // F5
+        Entrypoint.beep(698.46f, 250);
+        // E5
+        Entrypoint.beep(659.25f, 2*250);
+        Entrypoint.delay(10);
+        // E5
+        Entrypoint.beep(659.25f, 250);
+        // F#5
+        Entrypoint.beep(739.99f, 250);
+        Entrypoint.delay(10);
+        // F#5
+        Entrypoint.beep(739.99f, 3*250);
     }
 }
