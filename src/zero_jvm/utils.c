@@ -25,6 +25,7 @@ void FURI_LOG_I(const char* tag, const char* format, ...) {
 }
 void println(const char* string) {
     printf("%s", string);
+    printf("\n");
 }
 
 #endif

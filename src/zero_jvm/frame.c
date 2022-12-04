@@ -107,8 +107,7 @@ uint32_t *execute_frame(Frame *frame) {
                     case 4:
                         memcpy(&frame->stack[stack_pointer++], &data->data.uint, WORD_SIZE);
                         break;
-                    case 8:
-                    {
+                    case 8: {
                         uint32_t val = data->data.ushort;
                         memcpy(&frame->stack[stack_pointer++], &val, WORD_SIZE);
                         break;
@@ -316,7 +315,7 @@ uint32_t *execute_frame(Frame *frame) {
             case 0x11: // sipush
             {
                 int32_t val = frame->bytecode[frame->instruction_pointer + 1] << 8 |
-                               frame->bytecode[frame->instruction_pointer + 2];
+                              frame->bytecode[frame->instruction_pointer + 2];
                 memcpy(&frame->stack[stack_pointer++], &val, WORD_SIZE);
                 frame->instruction_pointer += 2;
                 break;
@@ -334,13 +333,9 @@ uint32_t *execute_frame(Frame *frame) {
                 uint16_t index = ((uint16_t) frame->bytecode[frame->instruction_pointer - 1] << 8) |
                                  frame->bytecode[frame->instruction_pointer];
                 ConstantPoolEntry *data = &frame->current_class->constant_pool[index];
-                short value[2];
-                memcpy(&value, &data->data, 4);
+                uint16_t class_index = data->data.ushort;
 
-//                uint16_t name_and_type_index = value[0];
-                uint16_t class_index = value[1];
-
-                class_index = frame->current_class->constant_pool[class_index].data.ushort;
+//                class_index = frame->current_class->constant_pool[class_index].data.ushort;
                 char *classname = frame->current_class->constant_pool[class_index].addon;
 
                 char *fullname = combine_names_with_dot("CL", classname);
@@ -348,7 +343,7 @@ uint32_t *execute_frame(Frame *frame) {
                                                      find_static_record(fullname, 0, MAP_TYPE_CL)));
                 free(fullname);
 
-                uint32_t *template = (uint32_t *) custom_calloc(class->field_count * 2, WORD_SIZE);
+                uint32_t *template = (uint32_t *) custom_calloc(2 + class->field_count * 2, WORD_SIZE);
                 memcpy(template, class->object_instance_template, class->field_count * 2 * WORD_SIZE);
 
                 memcpy(&frame->stack[stack_pointer++], &template, WORD_SIZE);
@@ -411,6 +406,7 @@ uint32_t *execute_frame(Frame *frame) {
                     furi_mutex_release(instance->model_mutex);
                     FURI_LOG_I("ZERO_JVM", "mutex released");
 #endif
+                    free(params);
                     break;
                 }
                 if (strcmp(fullname, "Entrypoint.delay") == 0) {
@@ -418,6 +414,7 @@ uint32_t *execute_frame(Frame *frame) {
 #ifndef X86
                     furi_delay_ms(params[1]);
 #endif
+                    free(params);
                     break;
                 }
 
@@ -428,9 +425,22 @@ uint32_t *execute_frame(Frame *frame) {
 
                 if (strcmp(fullname, "Entrypoint.println") == 0) {
                     free(fullname);
-                    printf("Entering println");
-                    char *string = class->constant_pool[params[1]].addon;
-                    println(string);
+                    printf("Entering println\n");
+                    if (strcmp(descriptor, "(I)V") == 0) {
+                        char buffer[20];
+                        sprintf(buffer, "%d", params[1]);
+                        println(buffer);
+                    } else if (strcmp(descriptor, "(Ljava/lang/String;)V") == 0) {
+                        char *string = class->constant_pool[params[1]].addon;
+                        println(string);
+                    } else if (strcmp(descriptor, "(F)V") == 0) {
+                        char buffer[20];
+                        sprintf(buffer, "%f", *(float *) &params[1]);
+                        println(buffer);
+                    } else {
+                        printf("Unknown descriptor %s", descriptor);
+                    }
+                    free(params);
                     break;
                 }
 
@@ -470,6 +480,7 @@ uint32_t *execute_frame(Frame *frame) {
                 memcpy(result_pointer + WORD_SIZE, &frame->stack[--stack_pointer], WORD_SIZE);
                 break;
             case 0xb2: // getstatic
+            case 0xb4: // getfield
             {
                 frame->instruction_pointer += 2;
                 uint16_t index = ((uint16_t) frame->bytecode[frame->instruction_pointer - 1] << 8) |
@@ -488,10 +499,23 @@ uint32_t *execute_frame(Frame *frame) {
                 class_index = frame->current_class->constant_pool[class_index].data.ushort;
                 char *classname = frame->current_class->constant_pool[class_index].addon;
 
-                char *fullname = combine_names_with_dot(classname, field_name);
-                uint32_t *value_pointer = (uint32_t *) (runtime.statics_table +
-                                                        find_static_record(fullname, descriptor, MAP_TYPE_SF));
-                memcpy(&frame->stack[stack_pointer++], value_pointer, WORD_SIZE);
+                char *fullname;
+                uint8_t *address = NULL;
+                if (op == 0xb4) {
+                    fullname = combine_names_with_dot("CL", classname);
+                    JavaClass *class = *((JavaClass **) (runtime.statics_table +
+                                                         find_static_record(fullname, 0, MAP_TYPE_CL)));
+
+                    address = (uint8_t *) frame->stack[--stack_pointer];
+                    uint32_t offset = find_instance_offset(class, field_name, descriptor, MAP_TYPE_IF);
+                    address += offset;
+                } else {
+                    fullname = combine_names_with_dot(classname, field_name);
+                    address = (uint8_t *) (runtime.statics_table +
+                                           find_static_record(fullname, descriptor, MAP_TYPE_SF));
+                }
+
+                memcpy(&frame->stack[stack_pointer++], address, WORD_SIZE);
                 free(fullname);
                 break;
             }
@@ -516,15 +540,16 @@ uint32_t *execute_frame(Frame *frame) {
                 class_index = frame->current_class->constant_pool[class_index].data.ushort;
                 char *classname = frame->current_class->constant_pool[class_index].addon;
 
-                char *fullname = combine_names_with_dot("CL", classname);
-                JavaClass *class = *((JavaClass **) (runtime.statics_table +
-                                                     find_static_record(fullname, 0, MAP_TYPE_CL)));
-                free(fullname);
-
                 uint32_t value_to_put = frame->stack[--stack_pointer];
 
                 uint8_t *address = NULL;
+                char *fullname = NULL;
                 if (op == 0xb5) {
+                    fullname = combine_names_with_dot("CL", classname);
+                    JavaClass *class = *((JavaClass **) (runtime.statics_table +
+                                                         find_static_record(fullname, 0, MAP_TYPE_CL)));
+                    free(fullname);
+
                     address = (uint8_t *) frame->stack[--stack_pointer];
                     uint32_t offset = find_instance_offset(class, field_name, descriptor, MAP_TYPE_IF);
                     address += offset;

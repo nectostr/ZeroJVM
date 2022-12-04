@@ -338,7 +338,7 @@ JavaClass *read_class(char *filename) {
 
     class->class_map = custom_calloc(MAX_THEORETICAL_CLASS_MAP_SIZE, sizeof(MapEntry));
 
-    class->object_instance_template = custom_calloc(class->field_count * 2, WORD_SIZE); // see any other * 2 explanation
+    class->object_instance_template = custom_calloc(2 + class->field_count * 2, WORD_SIZE); // see any other * 2 explanation
 
     for (uint16_t i = 0; i < class->field_count; ++i) {
         MFInfo current_field = read_meth_field_info();
@@ -435,9 +435,14 @@ JavaClass *read_class(char *filename) {
     fullname = combine_names_with_dot(class_name, "<clinit>");
     uint8_t **clinit = (uint8_t **) (runtime.statics_table + find_static_record(fullname, "()V", MAP_TYPE_SIM));
     free(fullname);
-    Frame new_frame = initialize_frame(class, *clinit, 0, NULL);
+
+    // arguments - a single pointer to class
+    uint32_t *args = custom_calloc(1, WORD_SIZE);
+    args[0] = (uint32_t) class;
+    Frame new_frame = initialize_frame(class, *clinit, 1, args);
     uint32_t *result = execute_frame(&new_frame);
     free(result);
+    free(args);
 
     return class;
 }

@@ -22,23 +22,7 @@ class Entrypoint {
     public static void delay(int duration_ms) {}
 
     public static void main(String argv[]) {
-        Entrypoint.println("Hello, world!");
-        Entrypoint.delay(3000);
-        Entrypoint.println("This is a working message!");
-        Entrypoint.delay(3000);
-        Entrypoint.println("Never gonna give you up");
-        Entrypoint.beep(440, 1000);
-        Entrypoint.delay(1000);
-        Entrypoint.println("Never gonna let you down");
-        Entrypoint.beep(250, 1000);
-        Entrypoint.delay(1000);
-        Entrypoint.println("Never gonna run around and desert you");
-        Entrypoint.delay(1000);
-        Entrypoint.println("Never gonna make you cry");
-        Entrypoint.delay(1000);
-        Entrypoint.println("Never gonna say goodbye");
-        Entrypoint.delay(1000);
-        Entrypoint.println("Never gonna tell a lie and hurt you");
-        Entrypoint.delay(5000);
+        Entrypoint.println("Hello, Java World! ^_^");
+        Entrypoint.delay(10000);
     }
 }
